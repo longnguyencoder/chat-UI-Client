@@ -361,6 +361,17 @@ class _MainViewState extends State<MainView> {
                       ChatBubble(
                         message: messageContent,
                         isUser: isUser,
+                        showActions: !isUser,
+                        messageType: msg.messageType ?? 'text',
+                        voiceUrl: msg.voiceUrl,
+                        onCopyPressed: viewModel.copyMessageToClipboard,
+                      ),
+                    ],
+                  ),
+                ),
+                if (isUser) ...[
+                  const SizedBox(width: 8),
+                  Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
