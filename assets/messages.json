@@ -1,0 +1,24 @@
+{
+  "messages": [
+    {
+      "message_id": 1,
+      "conversation_id": 0,
+      "sender": "user",
+      "message_text": "Gợi ý du lịch thành phố Hồ Chí Minh trong 2 ngày",
+      "translated_text": "",
+      "message_type": "text",
+      "voice_url": "",
+      "sent_at": "2025-05-30T15:25:55.964Z"
+    },
+    {
+      "message_id": 2,
+      "conversation_id": 0,
+      "sender": "chatbot",
+      "message_text": "Thành phố Hồ Chí Minh là điểm đến tuyệt vời để thưởng thức ẩm thực phong phú và trải nghiệm văn hóa sôi động của miền Nam Việt Nam. Dưới đây là kế hoạch cho chuyến du lịch của bạn:\n\nNgày 1:\nBuổi sáng:\nHoChiMinh Cooking Class - Một trải nghiệm học nấu ăn tại một lớp học nấu ăn địa phương. Bạn sẽ được hướng dẫn cách nấu những món ăn truyền thống Việt Nam.\nĐịa điểm: 319 C16 Lý Thường Kiệt, Phường 15, Quận 11, TP. Hồ Chí Minh\nThời gian: 08:00 - 12:00\n\nBuổi trưa:\nThử các món ăn địa phương tại Chợ Bến Thành - Một trong những chợ truyền thống lâu đời nhất ở TP. Hồ Chí Minh, nơi bạn có thể thưởng thức nhiều loại đặc sản đường phố.\nĐịa điểm: Chợ Bến Thành, Lê Lợi, Bến Thành, Quận 1, TP. Hồ Chí Minh\n\nBuổi chiều:\nDạo phố Nguyễn Huệ và Đồng Khởi - Khu vực phố đi bộ sầm uất với nhiều cửa hàng mua sắm, quán cà phê và nhà hàng.\nĐịa điểm: Đường Nguyễn Huệ và Đồng Khởi, Quận 1, TP. Hồ Chí Minh\n\nNgày 2:\nBuổi sáng:\nThăm Bảo tàng Chứng tích Chiến tranh - Một điểm đến lịch sử quan trọng để hiểu rõ hơn về lịch sử chiến tranh của Việt Nam.\nĐịa điểm: 28 Võ Văn Tần, Phường 6, Quận 3, TP. Hồ Chí Minh\nThời gian: 08:00 - 11:00\n\nBuổi trưa:\nThưởng thức bữa trưa tại Nhà hàng Ngon - Một nhà hàng nổi tiếng với các món ăn truyền thống Việt Nam.\nĐịa điểm: 160 Pasteur, Bến Nghé, Quận 1, TP. Hồ Chí Minh\n\nBuổi chiều:\nThăm Thành phố cũ - Khu vực lịch sử của thành phố với nhiều kiến trúc Pháp cổ điển và những con hẻm nhỏ đầy màu sắc.\nĐịa điểm: Khu vực Quận 1, TP. Hồ Chí Minh\n\n",
+      "translated_text": "",
+      "message_type": "text",
+      "voice_url": "",
+      "sent_at": "2025-05-30T15:26:10.964Z"
+    }
+  ]
+}
