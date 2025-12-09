@@ -1,83 +1,72 @@
-# ChatbotTravel_client
+# ChatbotMedical_client
 
 ## Giới thiệu dự án
 
-ChatbotTravel_client là ứng dụng di động hỗ trợ du lịch thông minh, tích hợp AI chatbot, bản đồ tương tác và lập lịch trình cá nhân hóa cho người dùng tại Việt Nam. Ứng dụng giúp người dùng tìm kiếm, lên kế hoạch, khám phá các địa điểm du lịch, ẩm thực, giải trí một cách thuận tiện và hiện đại.
+ChatbotMedical_client là ứng dụng di động hỗ trợ y tế thông minh, tích hợp AI chatbot để tư vấn sức khỏe ban đầu cho người dùng. Ứng dụng giúp người dùng tra cứu thông tin y tế, nhận lời khuyên sức khỏe và theo dõi tình trạng cá nhân một cách thuận tiện và nhanh chóng.
 
 ## Mục tiêu & Ý nghĩa
 
-- Hỗ trợ người dùng lên lịch trình du lịch tối ưu, tiết kiệm thời gian và chi phí.
-- Cung cấp thông tin địa điểm, gợi ý hành trình, bản đồ tương tác và trò chuyện AI.
-- Thúc đẩy chuyển đổi số trong lĩnh vực du lịch, nâng cao trải nghiệm cá nhân hóa.
+-   Hỗ trợ người dùng giải đáp thắc mắc y tế nhanh chóng 24/7.
+-   Cung cấp thông tin chính xác về các vấn đề sức khỏe phổ biến.
+-   Giảm tải cho nhân viên y tế ở các bước tư vấn ban đầu.
+-   Nâng cao ý thức chăm sóc sức khỏe của cộng đồng.
 
 ## Đối tượng sử dụng
 
-- Khách du lịch trong và ngoài nước muốn khám phá Việt Nam.
-- Người trẻ yêu thích công nghệ, trải nghiệm mới.
-- Các gia đình, nhóm bạn, cá nhân cần lập kế hoạch du lịch tiện lợi.
+-   Người cần tư vấn sức khỏe nhanh chóng.
+-   Bệnh nhân muốn tra cứu thông tin thuốc hoặc bệnh lý.
+-   Người quan tâm đến việc theo dõi và chăm sóc sức khỏe cá nhân.
 
 ## Công nghệ sử dụng
 
-- **Flutter**: Xây dựng ứng dụng đa nền tảng (Android, iOS, Web, Desktop)
-- **Mapbox, flutter_map**: Bản đồ tương tác, chỉ đường
-- **Provider**: Quản lý trạng thái
-- **AI Chatbot**: Tư vấn, trả lời tự động, gợi ý lịch trình
-- **Shared Preferences**: Lưu trữ dữ liệu cục bộ
-- **Table Calendar, Timeline Tile**: Quản lý lịch trình trực quan
-- **Geolocator, Permission Handler**: Định vị, xin quyền truy cập vị trí
-- **Các package khác**: http, audioplayers, url_launcher, pdf, printing, google_fonts...
+-   **Flutter**: Xây dựng ứng dụng đa nền tảng (Android, iOS, Web).
+-   **Provider**: Quản lý trạng thái.
+-   **AI Chatbot**: Tư vấn, trả lời tự động các câu hỏi y tế (Sử dụng PhoBERT/LLM).
+-   **Shared Preferences**: Lưu trữ dữ liệu cục bộ.
+-   **Các package khác**: http, google_fonts, ...
 
 ## Tính năng chính
 
-- Đăng ký, đăng nhập, quên mật khẩu, xác thực OTP
-- Chatbot AI hỗ trợ hỏi đáp, gợi ý lịch trình, địa điểm
-- Tìm kiếm, xem chi tiết các điểm du lịch, ẩm thực, giải trí
-- Lập và lưu lịch trình cá nhân hóa, xuất PDF
-- Bản đồ tương tác, chỉ đường, tìm kiếm địa điểm trên bản đồ
-- Quản lý tài khoản, cá nhân hóa trải nghiệm
-- Đa ngôn ngữ (Tiếng Việt, English, ...)
-- Bảo mật thông tin người dùng
+-   Đăng ký, đăng nhập, bảo mật thông tin người dùng.
+-   **Chatbot AI Y tế**: Hỏi đáp về triệu chứng, thuốc, bệnh lý và nhận lời khuyên sức khỏe.
+-   Tra cứu lịch sử trò chuyện y tế.
+-   Giao diện thân thiện, dễ sử dụng.
 
 ## Hướng dẫn cài đặt
 
 ### Yêu cầu hệ thống
 
-- Flutter SDK >= 3.7.2
-- Dart SDK >= 3.7.2
-- Android Studio/Xcode hoặc thiết bị thật/giả lập
+-   Flutter SDK >= 3.7.2
+-   Dart SDK >= 3.7.2
+-   Android Studio/Xcode hoặc thiết bị thật/giả lập
 
 ### Các bước cài đặt
 
-1. **Clone dự án:**
-   ```bash
-   git clone https://github.com/phamvangjang/ChatbotTravel_client
-   cd ChatbotTravel_client
-   ```
-2. **Cài đặt dependencies:**
-   ```bash
-   flutter pub get
-   ```
+1.  **Clone dự án:**
+    ```bash
+    git clone 
+    cd ChatbotMedical_client
+    ```
+2.  **Cài đặt dependencies:**
+    ```bash
+    flutter pub get
+    ```
+3.  **Cấu hình biến môi trường (nếu có):**
+    -   Tạo file `.env` ở thư mục gốc nếu cần cấu hình API URL.
 
-   1. **Cấu hình biến môi trường:**
-      - Tạo file `.env` ở thư mục gốc, thêm token Mapbox:
+4.  **Chạy ứng dụng:**
+    -   Android:
+        ```bash
+        flutter run -d android
         ```
-        MAPBOX_ACCESS_TOKEN=your_mapbox_token
+    -   iOS:
+        ```bash
+        flutter run -d ios
         ```
-3. **Chạy ứng dụng:**
-   - Android:
-     ```bash
-     flutter run -d android
-     ```
-   - iOS:
-     ```bash
-     flutter run -d ios
-     ```
-   - Web:
-     ```bash
-     flutter run -d chrome
-     ```
-4. **Kiểm tra các tính năng:**
-   - Đăng ký, đăng nhập, chat với AI, tạo lịch trình, xem bản đồ...
+    -   Web:
+        ```bash
+        flutter run -d chrome
+        ```
 
 ## Đóng góp
 

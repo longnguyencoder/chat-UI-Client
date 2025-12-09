@@ -358,14 +358,44 @@ class _MainViewState extends State<MainView> {
                             ? CrossAxisAlignment.end
                             : CrossAxisAlignment.start,
                     children: [
-                      ChatBubble(
-                        message: messageContent,
-                        isUser: isUser,
-                        showActions: !isUser,
-                        messageType: msg.messageType ?? 'text',
-                        voiceUrl: msg.voiceUrl,
-                        onCopyPressed: viewModel.copyMessageToClipboard,
-                      ),
+                        ChatBubble(
+                          message: messageContent,
+                          isUser: isUser,
+                          showActions: !isUser,
+                          messageType: msg.messageType ?? 'text',
+                          voiceUrl: msg.voiceUrl,
+                          onCopyPressed: viewModel.copyMessageToClipboard,
+                        ),
+                        if (!isUser && msg.suggestions != null && msg.suggestions!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: msg.suggestions!.map((suggestion) {
+                                return ActionChip(
+                                  label: Text(
+                                    suggestion,
+                                    style: TextStyle(
+                                      color: Colors.blue.shade800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.blue.shade50,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(color: Colors.blue.shade100),
+                                  ),
+                                  onPressed: () {
+                                    viewModel.sendMessage(suggestion);
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      viewModel.scrollToBottom(_scrollController);
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ),
                     ],
                   ),
                 ),

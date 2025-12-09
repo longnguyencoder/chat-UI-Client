@@ -10,6 +10,7 @@ class Message {
   final String? voiceUrl;
   final DateTime sentAt;
   final List<String>? places;
+  final List<String>? suggestions;
 
   Message({
     required this.messageId,
@@ -21,19 +22,20 @@ class Message {
     required this.voiceUrl,
     required this.sentAt,
     this.places, // Thay đổi thành optional
+    this.suggestions,
   });
 
   // Helper method để decode Unicode escape sequences và fix UTF-8 encoding issues
   static String _decodeUnicode(String text) {
     try {
-      print("🔍 Original text: $text");
+      // print("🔍 Original text: $text");
       
       // Bước 1: Decode Unicode escape sequences như \u00ed, \u00e0, etc.
       String decoded = text.replaceAllMapped(
         RegExp(r'\\u([0-9a-fA-F]{4})'),
         (match) => String.fromCharCode(int.parse(match.group(1)!, radix: 16)),
       );
-      print("🔍 After Unicode decode: $decoded");
+      // print("🔍 After Unicode decode: $decoded");
       
       // Bước 2: Fix UTF-8 encoding issues với nhiều trường hợp
       try {
@@ -41,7 +43,7 @@ class Message {
         if (decoded.contains('Ã') || decoded.contains('Â') || 
             decoded.contains('Æ') || decoded.contains('áº') || 
             decoded.contains('áº»') || decoded.contains('áº­')) {
-          print("🔍 Detected UTF-8 encoding issues, attempting multiple fixes...");
+          // print("🔍 Detected UTF-8 encoding issues, attempting multiple fixes...");
           
           // Thử nhiều cách decode khác nhau
           String result = decoded;
@@ -50,7 +52,7 @@ class Message {
           try {
             final bytes1 = latin1.encode(decoded);
             result = utf8.decode(bytes1, allowMalformed: true);
-            print("🔍 After Latin-1 -> UTF-8: $result");
+            // print("🔍 After Latin-1 -> UTF-8: $result");
           } catch (e) {
             print('Lỗi Latin-1 -> UTF-8: $e');
           }
@@ -61,7 +63,7 @@ class Message {
             try {
               final bytes2 = latin1.encode(result);
               result = utf8.decode(bytes2, allowMalformed: true);
-              print("🔍 After second Latin-1 -> UTF-8: $result");
+              // print("🔍 After second Latin-1 -> UTF-8: $result");
             } catch (e) {
               print('Lỗi second Latin-1 -> UTF-8: $e');
             }
@@ -73,7 +75,7 @@ class Message {
             try {
               final bytes3 = latin1.encode(result);
               result = utf8.decode(bytes3, allowMalformed: true);
-              print("🔍 After ISO-8859-1 -> UTF-8: $result");
+              // print("🔍 After ISO-8859-1 -> UTF-8: $result");
             } catch (e) {
               print('Lỗi ISO-8859-1 -> UTF-8: $e');
             }
@@ -85,7 +87,7 @@ class Message {
         print('Lỗi khi fix UTF-8 encoding: $e');
       }
       
-      print("🔍 Final decoded text: $decoded");
+      // print("🔍 Final decoded text: $decoded");
       return decoded;
     } catch (e) {
       print('Lỗi khi decode Unicode: $e');
@@ -96,6 +98,7 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) {
     // Xử lý places - chỉ bot messages mới có places
     List<String>? places;
+    List<String>? suggestions;
     
     // Kiểm tra sender - chỉ bot mới có places
     final sender = json['sender'] as String?;
@@ -128,13 +131,23 @@ class Message {
                 .toList();
           }
         }
+
+        // Xử lý suggestions
+        if (json['suggestions'] != null) {
+          if (json['suggestions'] is List) {
+             suggestions = (json['suggestions'] as List).map((e) => e.toString()).toList();
+          }
+        }
+
       } catch (e) {
-        print('Lỗi khi xử lý places trong Message.fromJson: $e');
+        print('Lỗi khi xử lý places/suggestions trong Message.fromJson: $e');
         places = null;
+        suggestions = null;
       }
     } else {
       // User messages luôn có places = null
       places = null;
+      suggestions = null;
     }
 
     return Message(
@@ -147,6 +160,7 @@ class Message {
       voiceUrl: json['voice_url'],
       sentAt: DateTime.parse(json['sent_at']),
       places: places, // null cho user, có thể có giá trị cho bot
+      suggestions: suggestions,
     );
   }
 
@@ -161,6 +175,7 @@ class Message {
       'voice_url': voiceUrl,
       'sent_at': sentAt.toIso8601String(),
       'places': places, // Có thể null
+      'suggestions': suggestions,
     };
   }
 
@@ -174,6 +189,7 @@ class Message {
     String? voiceUrl,
     DateTime? sentAt,
     List<String>? places, // Thay đổi thành nullable
+    List<String>? suggestions,
   }) {
     return Message(
       messageId: messageId ?? this.messageId,
@@ -185,6 +201,7 @@ class Message {
       voiceUrl: voiceUrl ?? this.voiceUrl,
       sentAt: sentAt ?? this.sentAt,
       places: places ?? this.places, // Có thể null
+      suggestions: suggestions ?? this.suggestions,
     );
   }
 }

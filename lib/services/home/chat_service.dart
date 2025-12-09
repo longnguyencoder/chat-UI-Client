@@ -194,7 +194,9 @@ class ChatService {
               'sender': 'bot',
               'sent_at': DateTime.now().toIso8601String(),
               // Mapping sources nếu có
-              'sources': responseData['sources']
+              'sources': responseData['sources'],
+              // Mapping suggestions
+              'suggestions': responseData['suggestions']
             },
             // Backend chat-secure không trả lại user_message, ta tự fake để UI hiển thị
             'user_message': {
