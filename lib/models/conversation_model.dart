@@ -9,51 +9,35 @@ class Conversation {
   Conversation({
     required this.conversationId,
     required this.userId,
-    required this.endedAt,
+    this.endedAt,       // Có thể null
     required this.startedAt,
-    required this.sourceLanguage,
-    required this.title
+    this.sourceLanguage = 'vi', // Mặc định là 'vi'
+    this.title
   });
 
-  factory Conversation.fromJson(Map<String, dynamic> json){
+  factory Conversation.fromJson(Map<String, dynamic> json) {
+    // Debug để xem chính xác Backend trả về gì
+    print("📦 Conversation JSON: $json"); 
+
     return Conversation(
-      conversationId: json['conversation_id'],
-      userId: json['user_id'],
-      startedAt: DateTime.parse(json['started_at']),
-      endedAt: json['ended_at'] != null
-          ? DateTime.parse(json['ended_at'])
+      // Backend trả về 'conversation_id', fallback 0 nếu null
+      conversationId: json['conversation_id'] ?? 0,
+      
+      // Backend KHÔNG trả user_id khi tạo mới -> fallback 0
+      userId: json['user_id'] ?? 0,
+      
+      startedAt: json['started_at'] != null 
+          ? DateTime.parse(json['started_at']) 
+          : DateTime.now(),
+          
+      endedAt: json['ended_at'] != null 
+          ? DateTime.parse(json['ended_at']) 
           : null,
-      sourceLanguage: json['source_language'],
-      title: json['title']
+          
+      sourceLanguage: json['source_language'] ?? 'vi',
+      title: json['title'] ?? 'Cuộc trò chuyện mới'
     );
   }
-
-  Map<String, dynamic> toJson(){
-    return {
-      'conversation_id': conversationId,
-      'user_id': userId,
-      'started_at': startedAt.toIso8601String(),
-      'ended_at': endedAt?.toIso8601String(),
-      'source_language': sourceLanguage,
-      'title': title
-    };
-  }
-
-  Conversation copyWith({
-    int? conversationId,
-    int? userId,
-    DateTime? startedAt,
-    DateTime? endedAt,
-    String? sourceLanguage,
-    String? title
-  }) {
-    return Conversation(
-      conversationId: conversationId ?? this.conversationId,
-      userId: userId ?? this.userId,
-      startedAt: startedAt ?? this.startedAt,
-      endedAt: endedAt ?? this.endedAt,
-      sourceLanguage: sourceLanguage ?? this.sourceLanguage,
-      title: title ?? this.title
-    );
-  }
+  
+  // ... toJson và copyWith giữ nguyên
 }

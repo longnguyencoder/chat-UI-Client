@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
@@ -193,7 +194,7 @@ class MainViewModel extends ChangeNotifier {
       _currentConversation = conversation;
 
       // Tải tin nhắn của cuộc trò chuyện
-      _messages = await _chatService.getConversationMessages(conversationId);
+      _messages = await _chatService.getConversationMessages(conversationId, _currentUserId!);
 
       print("Loaded ${_messages.length} messages for conversation $conversationId");
       
@@ -287,11 +288,19 @@ class MainViewModel extends ChangeNotifier {
     clearError();
 
     try {
+      // Lấy token từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        _setError("Vui lòng đăng nhập lại");
+        return;
+      }
+
       // Lưu tin nhắn của user
       final response = await _chatService.sendMessageAndGetResponse(
         conversationId: _currentConversation!.conversationId,
-        sender: 'user',
         messageText: messageText,
+        token: token,
       );
 
       // Parse response data
