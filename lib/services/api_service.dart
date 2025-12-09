@@ -60,6 +60,17 @@ class ApiService {
   // Bạn nên dùng deleteConversationUrl nếu muốn xóa, hoặc chỉ cần reset state ở client.
 
   // ========================================================================
+  // HEALTH PROFILE API
+  // ========================================================================
+  
+  // GET: Lấy hồ sơ sức khỏe
+  static String getHealthProfileUrl(int userId) =>
+      "$_baseUrl/health-profile?user_id=$userId";
+  
+  // PUT: Cập nhật hồ sơ sức khỏe
+  static String get updateHealthProfileUrl => "$_baseUrl/health-profile";
+
+  // ========================================================================
   // STUBS (Giữ nguyên để code không lỗi compile, nhưng backend chưa có)
   // ========================================================================
   static String get detectAttractionsUrl => "$_baseUrl/map/attractions/from-places";

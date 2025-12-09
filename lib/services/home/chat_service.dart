@@ -6,6 +6,7 @@ import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/services/api_service.dart';
 
+import 'package:flutter/foundation.dart'; // Import kIsWeb
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatService {
@@ -307,31 +308,85 @@ class ChatService {
       request.fields['conversation_id'] = conversationId.toString();
       request.fields['sender'] = sender;
 
-      final audioFile = File(audioFilePath);
-      final fileExtension = audioFilePath.split('.').last.toLowerCase();
+      String fileExtension = '';
+      if (audioFilePath.contains('.')) {
+         fileExtension = audioFilePath.split('.').last.toLowerCase();
+      }
+
       final mimeType = fileExtension == 'wav' ? 'audio/wav' :
       fileExtension == 'mp3' ? 'audio/mpeg' : 'audio/wav';
 
-      request.files.add(
-        http.MultipartFile(
-          'audio',
-          audioFile.readAsBytes().asStream(),
-          audioFile.lengthSync(),
-          filename: audioFile.path.split('/').last,
-          contentType: MediaType.parse(mimeType),
-        ),
-      );
+      if (kIsWeb) {
+        // Web: Fetch bytes from Blob URL
+        print('Fetching audio from Blob URL: $audioFilePath');
+        final audioResponse = await http.get(Uri.parse(audioFilePath));
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'audio',
+            audioResponse.bodyBytes,
+            filename: 'voice_message.wav',
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      } else {
+        // Mobile/Desktop: Use File
+        final audioFile = File(audioFilePath);
+        request.files.add(
+          http.MultipartFile(
+            'audio',
+            audioFile.readAsBytes().asStream(),
+            audioFile.lengthSync(),
+            filename: audioFile.path.split('/').last,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
 
       print('Sending voice message to: ${request.url}');
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      print("📥 Voice Response Status: ${response.statusCode}");
+      print("📥 Voice Response Body: ${response.body}");
+
+      print("📥 Voice Response Status: ${response.statusCode}");
+      print("📥 Voice Response Body: ${response.body}");
+
       if (response.statusCode == 201 || response.statusCode == 200) {
          final Map<String, dynamic> responseData = jsonDecode(response.body);
-         if (responseData['status'] != 'success') {
-           throw Exception(responseData['message'] ?? 'Lỗi không xác định');
+         
+         // Check both 'success' (boolean) and 'status' (string) to be safe
+         final isSuccess = responseData['success'] == true || responseData['status'] == 'success';
+         
+         if (!isSuccess) {
+           throw Exception(responseData['message'] ?? 'Lỗi không xác định (Server trả về failure)');
          }
-         return responseData;
+         
+         // Map backend response to UI expected structure
+         return {
+           'status': 'success',
+           'data': {
+             'user_message': {
+               'message_id': 0, // Temporary ID
+               'conversation_id': conversationId,
+               'sender': 'user',
+               'message_text': responseData['transcribed_text'] ?? responseData['question'] ?? 'Audio message',
+               'message_type': 'text',
+               'sent_at': DateTime.now().toIso8601String(),
+             },
+             'bot_message': {
+               'message_id': responseData['message_id'] ?? 0,
+               'conversation_id': conversationId,
+               'sender': 'bot',
+               'message_text': responseData['answer'],
+               'message_type': 'text',
+               'sent_at': DateTime.now().toIso8601String(),
+               // Backend speech/chat might not return suggestions/sources yet, but we can map if they do exist
+               'sources': responseData['sources'],
+               'suggestions': responseData['suggestions'], 
+             }
+           }
+         };
       } else {
         throw Exception('❌ Lỗi server: ${response.statusCode} - ${response.body}');
       }

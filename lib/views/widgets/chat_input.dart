@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
@@ -277,21 +278,37 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: TextField(
-              controller: _controller,
-              enabled: widget.isEnabled && !viewModel.isRecording,
-              decoration: const InputDecoration(
-                hintText: 'Nhập tin nhắn...',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+            child: KeyboardListener(
+              focusNode: FocusNode(),
+              onKeyEvent: (KeyEvent event) {
+                // Chỉ xử lý khi nhấn phím xuống (không xử lý khi thả phím)
+                if (event is KeyDownEvent) {
+                  // Nếu nhấn Enter mà không giữ Shift
+                  if (event.logicalKey == LogicalKeyboardKey.enter &&
+                      !HardwareKeyboard.instance.isShiftPressed) {
+                    // Gửi tin nhắn
+                    _sendMessage();
+                  }
+                  // Nếu nhấn Shift + Enter thì không làm gì (để TextField tự xuống dòng)
+                }
+              },
+              child: TextField(
+                controller: _controller,
+                enabled: widget.isEnabled && !viewModel.isRecording,
+                decoration: const InputDecoration(
+                  hintText: 'Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
+                maxLines: 5,
+                minLines: 1,
+                textCapitalization: TextCapitalization.sentences,
+                // Vẫn giữ onSubmitted để hỗ trợ trên mobile
+                onSubmitted: (_) => _sendMessage(),
               ),
-              maxLines: 3,
-              minLines: 1,
-              textCapitalization: TextCapitalization.sentences,
-              onSubmitted: (_) => _sendMessage(),
             ),
           ),
         ),

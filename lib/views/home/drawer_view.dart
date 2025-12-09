@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
+import 'package:mobilev2/views/home/health_profile_view.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
@@ -402,6 +403,40 @@ class _DrawerContentState extends State<_DrawerContent> {
 
                   // Divider
                   const Divider(height: 1),
+
+                  // Health Profile section
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.green.shade100,
+                      child: Icon(
+                        Icons.medical_information,
+                        color: Colors.green.shade700,
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'Hồ sơ sức khỏe',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      'Quản lý thông tin y tế',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey,
+                      size: 16,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HealthProfileView(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // User profile section
                   Container(
