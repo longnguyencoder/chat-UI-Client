@@ -339,18 +339,55 @@ class _DrawerContentState extends State<_DrawerContent> {
                                                 : Colors.grey.shade600,
                                       ),
                                     ),
-                                    trailing:
-                                        isSelected
-                                            ? Icon(
-                                              Icons.check_circle,
-                                              color: Colors.blue.shade600,
-                                              size: 20,
-                                            )
-                                            : const Icon(
-                                              Icons.arrow_forward_ios,
-                                              size: 16,
-                                              color: Colors.grey,
-                                            ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.delete_outline,
+                                            size: 20,
+                                            color: Colors.red.shade400,
+                                          ),
+                                          onPressed: () {
+                                            // Show confirmation dialog
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Xóa cuộc trò chuyện?'),
+                                                content: const Text(
+                                                    'Bạn có chắc chắn muốn xóa cuộc trò chuyện này không? Hành động này không thể hoàn tác.'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('Hủy'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                      drawerViewModel.deleteConversation(
+                                                          context, conversation.conversationId);
+                                                    },
+                                                    child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        if (isSelected)
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.blue.shade600,
+                                            size: 20,
+                                          )
+                                        else
+                                          const Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                      ],
+                                    ),
                                     onTap:
                                         () => drawerViewModel.onConversationTap(
                                           context,

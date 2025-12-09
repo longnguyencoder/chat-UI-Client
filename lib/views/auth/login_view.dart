@@ -48,7 +48,7 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 24),
                       
                       const Text(
-                        'Chatbot Y tế AI',
+                        'Chatbots Medical-client',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,

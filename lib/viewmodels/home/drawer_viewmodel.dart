@@ -68,6 +68,50 @@ class DrawerViewModel extends ChangeNotifier {
     _error = null;
   }
 
+  // Xóa cuộc trò chuyện
+  Future<void> deleteConversation(BuildContext context, int conversationId) async {
+    try {
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đang xóa cuộc trò chuyện...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      await _chatService.endConversation(conversationId);
+      
+      // Xóa khỏi danh sách local ngay lập tức để UI update nhanh
+      _conversations.removeWhere((c) => c.conversationId == conversationId);
+      notifyListeners();
+
+      // Kiểm tra và reset MainViewModel nếu đang xem cuộc trò chuyện bị xóa
+      final mainViewModel = Provider.of<MainViewModel>(context, listen: false);
+      if (mainViewModel.currentConversation?.conversationId == conversationId) {
+        print("🔄 Deleting current conversation, resetting MainViewModel");
+        mainViewModel.forceResetConversation();
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã xóa cuộc trò chuyện'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
+      
+      // Reload lại từ server để đồng bộ (nếu cần)
+      // await loadConversations();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi xóa cuộc trò chuyện: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> onConversationTap(
       BuildContext context,
       Conversation conversation,

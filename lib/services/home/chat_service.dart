@@ -342,11 +342,21 @@ class ChatService {
   // Kết thúc cuộc trò chuyện (backend ko co end, dung delete)
   Future<void> endConversation(int conversationId) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      
+      if (token == null) {
+        throw Exception('Chưa đăng nhập (thiếu token)');
+      }
+
       print("🔄 Deleting conversation $conversationId");
       
       final response = await http.delete(
         Uri.parse(ApiService.deleteConversationUrl(conversationId)),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
 
       print("📥 Delete conversation response status: ${response.statusCode}");

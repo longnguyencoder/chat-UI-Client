@@ -160,9 +160,15 @@ class AuthService {
   // Đổi tên người dùng
   Future<bool> updateUsername(int userId, String newUsername) async {
     try {
+      final token = await getToken();
+      if (token == null) return false;
+
       final response = await http.put(
         Uri.parse(ApiService.updateUsernameUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'user_id': userId,
           'full_name': newUsername,

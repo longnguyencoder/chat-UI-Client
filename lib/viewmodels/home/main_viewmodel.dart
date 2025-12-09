@@ -222,12 +222,22 @@ class MainViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print("Error loading conversation $conversationId: $e");
-      _setError(e.toString());
       
-      // ✅ Thay vào đó, chỉ hiển thị lỗi và để user tự xử lý
-      print("⚠️ Failed to load conversation $conversationId, user should handle this manually");
+      // Nếu không tìm thấy (do đã bị xóa), reset state
+      if (e.toString().toLowerCase().contains('not found') || 
+          e.toString().contains('404') ||
+          e.toString().contains('doesn\'t belong to user')) {
+        print("⚠️ Conversation not found or invalid. Resetting UI.");
+        forceResetConversation();
+      } else {
+        _setError(e.toString());
+      }
     } finally {
-      _setLoading(false);
+      // Chỉ tắt loading nếu đang load conversation hiện tại
+      // (để tránh race condition nếu người dùng chuyển conversation khác)
+      if (_currentConversation?.conversationId == conversationId || _currentConversation == null) {
+        _setLoading(false);
+      }
     }
   }
 
