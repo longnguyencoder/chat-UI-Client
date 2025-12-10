@@ -169,16 +169,36 @@ class MedicationViewModel extends ChangeNotifier {
   /// Ghi nhận đã uống thuốc
   Future<bool> markAsTaken(MedicationSchedule schedule) async {
     try {
-      await _medicationService.logMedication(
-        scheduleId: schedule.scheduleId!,
-        userId: userId,
-        scheduledTime: schedule.nextReminder ?? DateTime.now(),
-        status: 'taken',
-        actualTime: DateTime.now(),
+      // Tìm log entry pending cho lần uống thuốc này
+      final logId = await _findPendingLogId(
+        schedule.scheduleId!,
+        schedule.nextReminder ?? DateTime.now(),
       );
 
-      // Reload logs để cập nhật UI
+      if (logId == null) {
+        // Nếu không tìm thấy log pending, tạo mới
+        await _medicationService.logMedication(
+          scheduleId: schedule.scheduleId!,
+          userId: userId,
+          scheduledTime: schedule.nextReminder ?? DateTime.now(),
+          status: 'taken',
+          actualTime: DateTime.now(),
+        );
+      } else {
+        // Nếu tìm thấy, cập nhật log đó
+        await _medicationService.logMedication(
+          scheduleId: schedule.scheduleId!,
+          userId: userId,
+          scheduledTime: schedule.nextReminder ?? DateTime.now(),
+          status: 'taken',
+          actualTime: DateTime.now(),
+          logId: logId, // Truyền log_id thực sự
+        );
+      }
+
+      // Reload logs và schedules để cập nhật UI
       await loadLogs(scheduleId: schedule.scheduleId);
+      await loadSchedules(); // Reload danh sách để cập nhật nextReminder
       return true;
     } catch (e) {
       _error = e.toString();
@@ -190,16 +210,36 @@ class MedicationViewModel extends ChangeNotifier {
   /// Ghi nhận bỏ qua
   Future<bool> markAsSkipped(MedicationSchedule schedule, String? reason) async {
     try {
-      await _medicationService.logMedication(
-        scheduleId: schedule.scheduleId!,
-        userId: userId,
-        scheduledTime: schedule.nextReminder ?? DateTime.now(),
-        status: 'skipped',
-        notes: reason,
+      // Tìm log entry pending cho lần uống thuốc này
+      final logId = await _findPendingLogId(
+        schedule.scheduleId!,
+        schedule.nextReminder ?? DateTime.now(),
       );
 
-      // Reload logs để cập nhật UI
+      if (logId == null) {
+        // Nếu không tìm thấy log pending, tạo mới
+        await _medicationService.logMedication(
+          scheduleId: schedule.scheduleId!,
+          userId: userId,
+          scheduledTime: schedule.nextReminder ?? DateTime.now(),
+          status: 'skipped',
+          notes: reason,
+        );
+      } else {
+        // Nếu tìm thấy, cập nhật log đó
+        await _medicationService.logMedication(
+          scheduleId: schedule.scheduleId!,
+          userId: userId,
+          scheduledTime: schedule.nextReminder ?? DateTime.now(),
+          status: 'skipped',
+          notes: reason,
+          logId: logId, // Truyền log_id thực sự
+        );
+      }
+
+      // Reload logs và schedules để cập nhật UI
       await loadLogs(scheduleId: schedule.scheduleId);
+      await loadSchedules(); // Reload danh sách để cập nhật nextReminder
       return true;
     } catch (e) {
       _error = e.toString();
@@ -228,12 +268,70 @@ class MedicationViewModel extends ChangeNotifier {
         toDate: toDate?.toIso8601String().split('T')[0],
       );
 
+      // Debug: In ra logs để kiểm tra
+      print('📋 Loaded ${_logs.length} logs for schedule $scheduleId');
+      for (final log in _logs) {
+        print('   - Log ${log.logId}: ${log.status} at ${log.scheduledTime}');
+      }
+
+      // Lọc logs trùng lặp - Ưu tiên taken/skipped hơn pending
+      final Map<String, MedicationLog> uniqueLogs = {};
+      for (final log in _logs) {
+        final key = log.scheduledTime.toIso8601String();
+        
+        if (!uniqueLogs.containsKey(key)) {
+          // Chưa có log cho thời gian này, thêm vào
+          uniqueLogs[key] = log;
+        } else {
+          // Đã có log, so sánh priority
+          final existing = uniqueLogs[key]!;
+          // Priority: taken > skipped > pending
+          final logPriority = log.status == 'taken' ? 3 : (log.status == 'skipped' ? 2 : 1);
+          final existingPriority = existing.status == 'taken' ? 3 : (existing.status == 'skipped' ? 2 : 1);
+          
+          if (logPriority > existingPriority) {
+            uniqueLogs[key] = log;
+          }
+        }
+      }
+      
+      _logs = uniqueLogs.values.toList();
+      print('📋 After filtering: ${_logs.length} unique logs');
+
+      // Sắp xếp logs theo thời gian giảm dần (mới nhất lên đầu)
+      _logs.sort((a, b) => b.scheduledTime.compareTo(a.scheduledTime));
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Tìm log_id của log entry pending
+  Future<int?> _findPendingLogId(int scheduleId, DateTime scheduledTime) async {
+    try {
+      // Lấy danh sách logs cho schedule này
+      final logs = await _medicationService.getLogs(
+        userId: userId,
+        scheduleId: scheduleId,
+        status: 'pending',
+      );
+
+      // Tìm log có scheduled_time khớp (trong vòng 1 phút)
+      for (final log in logs) {
+        final diff = log.scheduledTime.difference(scheduledTime).abs();
+        if (diff.inMinutes < 1) {
+          return log.logId;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Error finding pending log: $e');
+      return null;
     }
   }
 

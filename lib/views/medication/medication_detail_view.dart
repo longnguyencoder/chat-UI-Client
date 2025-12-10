@@ -5,56 +5,71 @@ import 'package:mobilev2/viewmodels/medication_viewmodel.dart';
 import 'package:mobilev2/views/medication/add_medication_view.dart';
 import 'package:provider/provider.dart';
 
-class MedicationDetailView extends StatelessWidget {
+class MedicationDetailView extends StatefulWidget {
   final MedicationSchedule schedule;
+  final MedicationViewModel viewModel;
 
-  const MedicationDetailView({super.key, required this.schedule});
+  const MedicationDetailView({
+    super.key,
+    required this.schedule,
+    required this.viewModel,
+  });
+
+  @override
+  State<MedicationDetailView> createState() => _MedicationDetailViewState();
+}
+
+class _MedicationDetailViewState extends State<MedicationDetailView> {
+  @override
+  void initState() {
+    super.initState();
+    // Load logs when entering detail view
+    widget.viewModel.loadLogs(scheduleId: widget.schedule.scheduleId);
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
 
-    return ChangeNotifierProvider(
-      create: (_) => MedicationViewModel(user!.id)..loadLogs(scheduleId: schedule.scheduleId),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: const Text(
-            'Chi tiết lịch nhắc nhở',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Chi tiết lịch nhắc nhở',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-          elevation: 1,
-          centerTitle: true,
-          iconTheme: const IconThemeData(color: Colors.black),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddMedicationView(schedule: schedule),
-                  ),
-                );
-
-                if (result == true && context.mounted) {
-                  Navigator.pop(context, true);
-                }
-              },
-              tooltip: 'Chỉnh sửa',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () => _confirmDelete(context, user!.id),
-              tooltip: 'Xóa',
-            ),
-          ],
         ),
-        backgroundColor: const Color(0xFFF7F7F8),
+        elevation: 1,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddMedicationView(schedule: widget.schedule),
+                ),
+              );
+
+              if (result == true && context.mounted) {
+                Navigator.pop(context, true);
+              }
+            },
+            tooltip: 'Chỉnh sửa',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () => _confirmDelete(context, user!.id),
+            tooltip: 'Xóa',
+          ),
+        ],
+      ),
+      backgroundColor: const Color(0xFFF7F7F8),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -83,16 +98,16 @@ class MedicationDetailView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              schedule.medicationName,
+                              widget.schedule.medicationName,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (schedule.dosage != null) ...[
+                            if (widget.schedule.dosage != null) ...[
                               const SizedBox(height: 4),
                               Text(
-                                schedule.dosage!,
+                                widget.schedule.dosage!,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey.shade600,
@@ -104,7 +119,7 @@ class MedicationDetailView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (schedule.notes != null) ...[
+                  if (widget.schedule.notes != null) ...[
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 8),
@@ -118,7 +133,7 @@ class MedicationDetailView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      schedule.notes!,
+                      widget.schedule.notes!,
                       style: const TextStyle(fontSize: 15),
                     ),
                   ],
@@ -144,29 +159,29 @@ class MedicationDetailView extends StatelessWidget {
                   _buildInfoRow(
                     Icons.schedule,
                     'Tần suất',
-                    schedule.frequencyDisplay,
+                    widget.schedule.frequencyDisplay,
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     Icons.access_time,
                     'Giờ uống',
-                    schedule.timeSlots.join(', '),
+                    widget.schedule.timeSlots.join(', '),
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     Icons.calendar_today,
                     'Bắt đầu',
-                    _formatDate(schedule.startDate),
+                    _formatDate(widget.schedule.startDate),
                   ),
-                  if (schedule.endDate != null) ...[
+                  if (widget.schedule.endDate != null) ...[
                     const SizedBox(height: 12),
                     _buildInfoRow(
                       Icons.event,
                       'Kết thúc',
-                      _formatDate(schedule.endDate!),
+                      _formatDate(widget.schedule.endDate!),
                     ),
                   ],
-                  if (schedule.nextReminder != null) ...[
+                  if (widget.schedule.nextReminder != null) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -195,7 +210,7 @@ class MedicationDetailView extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _formatDateTime(schedule.nextReminder!),
+                                  _formatDateTime(widget.schedule.nextReminder!),
                                   style: TextStyle(
                                     fontSize: 15,
                                     color: Colors.orange.shade900,
@@ -231,15 +246,15 @@ class MedicationDetailView extends StatelessWidget {
                   _buildInfoRow(
                     Icons.notifications,
                     'Thông báo trên thiết bị',
-                    schedule.enableLocalNotification ? 'Bật' : 'Tắt',
-                    valueColor: schedule.enableLocalNotification ? Colors.green : Colors.grey,
+                    widget.schedule.enableLocalNotification ? 'Bật' : 'Tắt',
+                    valueColor: widget.schedule.enableLocalNotification ? Colors.green : Colors.grey,
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     Icons.email,
                     'Thông báo qua Email',
-                    schedule.enableEmailNotification ? 'Bật' : 'Tắt',
-                    valueColor: schedule.enableEmailNotification ? Colors.green : Colors.grey,
+                    widget.schedule.enableEmailNotification ? 'Bật' : 'Tắt',
+                    valueColor: widget.schedule.enableEmailNotification ? Colors.green : Colors.grey,
                   ),
                 ],
               ),
@@ -248,9 +263,10 @@ class MedicationDetailView extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Lịch sử uống thuốc
-            Consumer<MedicationViewModel>(
-              builder: (context, viewModel, child) {
-                if (viewModel.isLoading) {
+            ListenableBuilder(
+              listenable: widget.viewModel,
+              builder: (context, child) {
+                if (widget.viewModel.isLoading) {
                   return _buildCard(
                     child: const Center(
                       child: Padding(
@@ -261,7 +277,7 @@ class MedicationDetailView extends StatelessWidget {
                   );
                 }
 
-                if (viewModel.logs.isEmpty) {
+                if (widget.viewModel.logs.isEmpty) {
                   return _buildCard(
                     child: Column(
                       children: [
@@ -294,7 +310,7 @@ class MedicationDetailView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ...viewModel.logs.take(5).map((log) {
+                      ...widget.viewModel.logs.take(5).map((log) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Row(
@@ -370,16 +386,40 @@ class MedicationDetailView extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final viewModel = context.read<MedicationViewModel>();
-                      final success = await viewModel.markAsTaken(schedule);
+                      try {
+                        final success = await widget.viewModel.markAsTaken(widget.schedule);
 
-                      if (success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ Đã ghi nhận uống thuốc'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                        if (context.mounted) {
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Đã ghi nhận uống thuốc'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            // Quay lại màn hình danh sách để xem cập nhật
+                            Navigator.pop(context, true);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Lỗi: ${widget.viewModel.error ?? "Không thể ghi nhận"}'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('❌ Lỗi: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       }
                     },
                     icon: const Icon(Icons.check_circle),
@@ -395,16 +435,40 @@ class MedicationDetailView extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final viewModel = context.read<MedicationViewModel>();
-                      final success = await viewModel.markAsSkipped(schedule, null);
+                      try {
+                        final success = await widget.viewModel.markAsSkipped(widget.schedule, null);
 
-                      if (success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('⏭️ Đã ghi nhận bỏ qua'),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
+                        if (context.mounted) {
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('⏭️ Đã ghi nhận bỏ qua'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            // Quay lại màn hình danh sách để xem cập nhật
+                            Navigator.pop(context, true);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Lỗi: ${widget.viewModel.error ?? "Không thể ghi nhận"}'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('❌ Lỗi: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       }
                     },
                     icon: const Icon(Icons.skip_next),
@@ -422,9 +486,8 @@ class MedicationDetailView extends StatelessWidget {
             const SizedBox(height: 32),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
   Widget _buildCard({required Widget child}) {
     return Card(
@@ -492,7 +555,7 @@ class MedicationDetailView extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('Xóa lịch nhắc nhở?'),
         content: Text(
-          'Bạn có chắc chắn muốn xóa lịch nhắc nhở "${schedule.medicationName}"?',
+          'Bạn có chắc chắn muốn xóa lịch nhắc nhở "${widget.schedule.medicationName}"?',
         ),
         actions: [
           TextButton(
@@ -509,8 +572,7 @@ class MedicationDetailView extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final viewModel = MedicationViewModel(userId);
-      final success = await viewModel.deleteSchedule(schedule.scheduleId!);
+      final success = await widget.viewModel.deleteSchedule(widget.schedule.scheduleId!);
 
       if (context.mounted) {
         if (success) {

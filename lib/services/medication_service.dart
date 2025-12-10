@@ -208,6 +208,7 @@ class MedicationService {
     required String status, // 'taken' or 'skipped'
     DateTime? actualTime,
     String? notes,
+    int? logId, // ID của log entry đã tồn tại (nếu có)
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -217,27 +218,35 @@ class MedicationService {
         throw Exception('Chưa đăng nhập (thiếu token)');
       }
 
+      // Backend expects 'log_id' and 'status' as required fields
+      // Sử dụng logId nếu có, nếu không dùng scheduleId
+      final requestBody = {
+        'log_id': logId ?? scheduleId,
+        'schedule_id': scheduleId,
+        'status': status,
+        'user_id': userId,
+        'scheduled_time': scheduledTime.toIso8601String(),
+        if (actualTime != null) 'actual_time': actualTime.toIso8601String(),
+        if (notes != null) 'notes': notes,
+      };
+
+      print('📤 Log Medication Request: ${jsonEncode(requestBody)}');
+
       final response = await http.post(
         Uri.parse(ApiService.createMedicationLogUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'schedule_id': scheduleId,
-          'user_id': userId,
-          'scheduled_time': scheduledTime.toIso8601String(),
-          'actual_time': actualTime?.toIso8601String(),
-          'status': status,
-          'notes': notes,
-        }),
+        body: jsonEncode(requestBody),
       );
 
       print('📤 Log Medication Response: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return MedicationLog.fromJson(data['data'] ?? data);
+        return MedicationLog.fromJson(data['data'] ?? data['log'] ?? data);
       } else if (response.statusCode == 401) {
         throw Exception('Hết phiên đăng nhập. Vui lòng đăng nhập lại.');
       } else {

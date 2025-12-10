@@ -143,6 +143,8 @@ class MedicationSchedule {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     
+    DateTime? earliestReminder;
+    
     for (final timeSlot in timeSlots) {
       final parts = timeSlot.split(':');
       final hour = int.parse(parts[0]);
@@ -166,9 +168,12 @@ class MedicationSchedule {
         continue;
       }
       
-      return reminderTime;
+      // So sánh với earliestReminder để tìm thời gian sớm nhất
+      if (earliestReminder == null || reminderTime.isBefore(earliestReminder)) {
+        earliestReminder = reminderTime;
+      }
     }
     
-    return null;
+    return earliestReminder;
   }
 }

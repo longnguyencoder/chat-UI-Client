@@ -137,7 +137,10 @@ class _MedicationListContent extends StatelessWidget {
               itemCount: viewModel.activeSchedules.length,
               itemBuilder: (context, index) {
                 final schedule = viewModel.activeSchedules[index];
-                return _MedicationCard(schedule: schedule);
+                return _MedicationCard(
+                  schedule: schedule,
+                  viewModel: viewModel, // Pass ViewModel to card
+                );
               },
             ),
           );
@@ -165,8 +168,12 @@ class _MedicationListContent extends StatelessWidget {
 
 class _MedicationCard extends StatelessWidget {
   final MedicationSchedule schedule;
+  final MedicationViewModel viewModel;
 
-  const _MedicationCard({required this.schedule});
+  const _MedicationCard({
+    required this.schedule,
+    required this.viewModel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,12 +188,15 @@ class _MedicationCard extends StatelessWidget {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => MedicationDetailView(schedule: schedule),
+              builder: (context) => MedicationDetailView(
+                schedule: schedule,
+                viewModel: viewModel,
+              ),
             ),
           );
 
           if (result == true && context.mounted) {
-            context.read<MedicationViewModel>().refresh();
+            viewModel.refresh();
           }
         },
         borderRadius: BorderRadius.circular(12),
