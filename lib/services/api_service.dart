@@ -71,6 +71,62 @@ class ApiService {
   static String get updateHealthProfileUrl => "$_baseUrl/health-profile";
 
   // ========================================================================
+  // MEDICATION REMINDER API
+  // ========================================================================
+  
+  // POST: Tạo lịch nhắc nhở mới
+  static String get createMedicationScheduleUrl => "$_baseUrl/medication/schedules";
+  
+  // GET: Lấy danh sách lịch nhắc nhở
+  static String getMedicationSchedulesUrl({int? userId, bool? isActive}) {
+    final params = <String>[];
+    if (userId != null) params.add('user_id=$userId');
+    if (isActive != null) params.add('is_active=$isActive');
+    return "$_baseUrl/medication/schedules${params.isNotEmpty ? '?${params.join('&')}' : ''}";
+  }
+  
+  // GET: Lấy chi tiết 1 lịch
+  static String getMedicationScheduleDetailUrl(int scheduleId) =>
+      "$_baseUrl/medication/schedules/$scheduleId";
+  
+  // PUT: Cập nhật lịch
+  static String updateMedicationScheduleUrl(int scheduleId) =>
+      "$_baseUrl/medication/schedules/$scheduleId";
+  
+  // DELETE: Xóa lịch (soft delete)
+  static String deleteMedicationScheduleUrl(int scheduleId) =>
+      "$_baseUrl/medication/schedules/$scheduleId";
+  
+  // POST: Ghi nhận đã uống/bỏ qua
+  static String get createMedicationLogUrl => "$_baseUrl/medication/logs";
+  
+  // GET: Lấy lịch sử (có filter)
+  static String getMedicationLogsUrl({
+    int? userId,
+    int? scheduleId,
+    String? status,
+    String? fromDate,
+    String? toDate,
+  }) {
+    final params = <String>[];
+    if (userId != null) params.add('user_id=$userId');
+    if (scheduleId != null) params.add('schedule_id=$scheduleId');
+    if (status != null) params.add('status=$status');
+    if (fromDate != null) params.add('from_date=$fromDate');
+    if (toDate != null) params.add('to_date=$toDate');
+    return "$_baseUrl/medication/logs${params.isNotEmpty ? '?${params.join('&')}' : ''}";
+  }
+  
+  // GET: Thống kê tuân thủ
+  static String getMedicationStatsUrl({int? userId, String? fromDate, String? toDate}) {
+    final params = <String>[];
+    if (userId != null) params.add('user_id=$userId');
+    if (fromDate != null) params.add('from_date=$fromDate');
+    if (toDate != null) params.add('to_date=$toDate');
+    return "$_baseUrl/medication/logs/stats${params.isNotEmpty ? '?${params.join('&')}' : ''}";
+  }
+
+  // ========================================================================
   // STUBS (Giữ nguyên để code không lỗi compile, nhưng backend chưa có)
   // ========================================================================
   static String get detectAttractionsUrl => "$_baseUrl/map/attractions/from-places";

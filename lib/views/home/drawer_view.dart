@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/views/home/health_profile_view.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
+import 'package:mobilev2/views/medication/medication_list_view.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../viewmodels/home/main_viewmodel.dart';
@@ -403,6 +404,40 @@ class _DrawerContentState extends State<_DrawerContent> {
 
                   // Divider
                   const Divider(height: 1),
+
+                  // Medication Reminder section
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.purple.shade100,
+                      child: Icon(
+                        Icons.medication,
+                        color: Colors.purple.shade700,
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'Nhắc nhở Uống thuốc',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      'Quản lý lịch uống thuốc',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey,
+                      size: 16,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MedicationListView(),
+                        ),
+                      );
+                    },
+                  ),
 
                   // Health Profile section
                   ListTile(
