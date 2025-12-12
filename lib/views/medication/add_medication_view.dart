@@ -472,14 +472,13 @@ class _AddMedicationViewState extends State<AddMedicationView> {
       enableEmailNotification: _enableEmailNotification,
     );
 
+    final viewModel = MedicationViewModel(userId);
     bool success;
     if (widget.schedule == null) {
       // Create new
-      final viewModel = MedicationViewModel(userId);
       success = await viewModel.createSchedule(schedule);
     } else {
       // Update existing
-      final viewModel = MedicationViewModel(userId);
       success = await viewModel.updateSchedule(widget.schedule!.scheduleId!, schedule);
     }
 
@@ -498,9 +497,12 @@ class _AddMedicationViewState extends State<AddMedicationView> {
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Có lỗi xảy ra. Vui lòng thử lại.'),
+          SnackBar(
+            content: Text(viewModel.error != null 
+                ? '❌ ${viewModel.error}' 
+                : '❌ Có lỗi xảy ra. Vui lòng thử lại.'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

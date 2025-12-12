@@ -206,8 +206,8 @@ class _MainViewState extends State<MainView> {
 
               // Chat input
               ChatInput(
-                onSendMessage: (message) {
-                  viewModel.sendMessage(message);
+                onSendMessage: (message, image) {
+                  viewModel.sendMessage(message, imageFile: image);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     viewModel.scrollToBottom(_scrollController);
                   });
@@ -331,6 +331,7 @@ class _MainViewState extends State<MainView> {
                           showActions: !isUser,
                           messageType: msg.messageType ?? 'text',
                           voiceUrl: msg.voiceUrl,
+                          imageBase64: msg.imageBase64, // ✅ Truyền ảnh vào ChatBubble
                           onCopyPressed: viewModel.copyMessageToClipboard,
                         ),
                         if (!isUser && msg.suggestions != null && msg.suggestions!.isNotEmpty)

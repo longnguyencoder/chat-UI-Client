@@ -148,10 +148,11 @@ class MedicationService {
       );
 
       print('📤 Update Schedule Response: ${response.statusCode}');
+      print('📥 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return MedicationSchedule.fromJson(data['data'] ?? data);
+        return MedicationSchedule.fromJson(data['schedule'] ?? data['data'] ?? data);
       } else if (response.statusCode == 401) {
         throw Exception('Hết phiên đăng nhập. Vui lòng đăng nhập lại.');
       } else {

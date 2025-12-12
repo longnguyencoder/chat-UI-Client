@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/services/api_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter/foundation.dart'; // Import kIsWeb
 import 'package:shared_preferences/shared_preferences.dart';
@@ -159,24 +160,48 @@ class ChatService {
     String translatedText = '',
     String messageType = 'text',
     String? voiceUrl,
+    XFile? imageFile, // ✅ Thêm tham số ảnh (dùng XFile để hỗ trợ Web)
   }) async {
     try {
       print("🔐 Token used: $token");
       print("📤 Sending secure message to: ${ApiService.sendMessageUrl}");
       
+      String? base64Image;
+      if (imageFile != null) {
+        final bytes = await imageFile.readAsBytes();
+        final rawBase64 = base64Encode(bytes);
+        
+        // Xác định extension
+        String extension = 'jpeg';
+        if (imageFile.path.contains('.')) {
+          extension = imageFile.path.split('.').last.toLowerCase();
+        }
+        if (extension == 'jpg') extension = 'jpeg';
+        
+        // Thêm Data URI prefix
+        base64Image = "data:image/$extension;base64,$rawBase64";
+        print("📸 Encoded image to Base64 with prefix (length: ${base64Image.length})");
+      }
+
+      final body = {
+        'conversation_id': conversationId,
+        'question': messageText,       // ✅ Backend chat-secure dùng 'question'
+        // Các trường phụ có thể gửi thêm nếu backend cần log
+        'message_text': messageText,   
+        'message_type': messageType,
+      };
+
+      if (base64Image != null) {
+        body['image_base64'] = base64Image;
+      }
+
       final response = await http.post(
         Uri.parse(ApiService.sendMessageUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token', // ✅ Gửi Token xác thực
         },
-        body: jsonEncode({
-          'conversation_id': conversationId,
-          'question': messageText,       // ✅ Backend chat-secure dùng 'question'
-          // Các trường phụ có thể gửi thêm nếu backend cần log
-          'message_text': messageText,   
-          'message_type': messageType,
-        }),
+        body: jsonEncode(body),
       );
 
       print("📥 Send Message Response: ${response.statusCode}");
@@ -204,6 +229,7 @@ class ChatService {
               'message_text': messageText,
               'sender': 'user',
               'sent_at': DateTime.now().toIso8601String(),
+              'image_base64': base64Image, // ✅ Lưu ảnh để hiển thị ở UI
             }
           }
         };

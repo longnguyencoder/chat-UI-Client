@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
@@ -307,8 +309,9 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // Gửi tin nhắn dạng text
-  Future<void> sendMessage(String messageText) async {
-    if (!hasValidUser || _currentConversation == null || messageText.trim().isEmpty) return;
+  Future<void> sendMessage(String messageText, {XFile? imageFile}) async {
+    // Cho phép gửi nếu có text HOẶC có ảnh
+    if (!hasValidUser || _currentConversation == null || (messageText.trim().isEmpty && imageFile == null)) return;
 
     _setSending(true);
     clearError();
@@ -327,6 +330,7 @@ class MainViewModel extends ChangeNotifier {
         conversationId: _currentConversation!.conversationId,
         messageText: messageText,
         token: token,
+        imageFile: imageFile, // ✅ Truyền ảnh
       );
 
       // Parse response data

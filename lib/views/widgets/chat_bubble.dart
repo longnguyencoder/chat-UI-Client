@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +11,7 @@ class ChatBubble extends StatefulWidget {
   final bool showActions;
   final Widget? extraAction;
   final String? voiceUrl;
+  final String? imageBase64; // ✅ Thêm
   final String messageType;
   final Function(String, BuildContext)? onCopyPressed;
 
@@ -19,6 +22,7 @@ class ChatBubble extends StatefulWidget {
     this.showActions = false,
     this.extraAction,
     this.voiceUrl,
+    this.imageBase64, // ✅ Thêm
     this.messageType = 'text',
     this.onCopyPressed,
   });
@@ -117,12 +121,13 @@ class _ChatBubbleState extends State<ChatBubble> {
         print('Audio paused');
       } else {
         // Check if the position is at the end, if so reset to beginning
-        if (_position >= _duration && _duration.inMilliseconds > 0) {
-          await _audioPlayer.seek(Duration.zero);
+        if (widget.voiceUrl != null) {
+          if (_position >= _duration && _duration.inMilliseconds > 0) {
+            await _audioPlayer.seek(Duration.zero);
+          }
+           print('Playing audio from: ${widget.voiceUrl}');
+           await _audioPlayer.play(UrlSource(widget.voiceUrl!));
         }
-
-        print('Playing audio from: ${widget.voiceUrl}');
-        await _audioPlayer.play(UrlSource(widget.voiceUrl!));
       }
     } catch (e) {
       print('Error playing/pausing audio: $e');
@@ -135,8 +140,9 @@ class _ChatBubbleState extends State<ChatBubble> {
 
   @override
   Widget build(BuildContext context) {
-    // Debug print to check message type and voice URL
-    print('Building chat bubble: isUser=${widget.isUser}, messageType=${widget.messageType}, voiceUrl=${widget.voiceUrl}');
+    // Debug print
+    // print('Building chat bubble: isUser=${widget.isUser}, messageType=${widget.messageType}, voiceUrl=${widget.voiceUrl}');
+    
     return Container(
       margin: EdgeInsets.only(
         bottom: 8,
@@ -184,6 +190,10 @@ class _ChatBubbleState extends State<ChatBubble> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ✅ Hiển thị ảnh nếu có
+                if (widget.imageBase64 != null && widget.imageBase64!.isNotEmpty)
+                  _buildImageMessage(),
+                  
                 // Hiển thị voice message nếu có
                 if (widget.messageType == 'voice' && widget.voiceUrl != null && widget.voiceUrl!.isNotEmpty)
                   _buildVoiceMessage(),
@@ -209,32 +219,27 @@ class _ChatBubbleState extends State<ChatBubble> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ... (keep actions)
                   // Nút copy
                   IconButton(
                     icon: const Icon(Icons.copy, size: 16, color: Colors.grey),
                     onPressed: () {
-                      // Implement copy functionality
                       if (widget.onCopyPressed != null) {
                         widget.onCopyPressed!(widget.message, context);
                       }
                     },
                     tooltip: 'Sao chép',
                   ),
-
-                  // Nút like/dislike
+                  // ... (other buttons)
                   IconButton(
                     icon: const Icon(
                       Icons.thumb_up_outlined,
                       size: 16,
                       color: Colors.grey,
                     ),
-                    onPressed: () {
-                      // Implement like functionality
-                    },
+                    onPressed: () {},
                     tooltip: 'Thích',
                   ),
-
-                  // Extra action nếu có
                   if (widget.extraAction != null) widget.extraAction!,
                 ],
               ),
@@ -242,6 +247,43 @@ class _ChatBubbleState extends State<ChatBubble> {
         ],
       ),
     );
+  }
+
+  // ✅ Widget hiển thị ảnh
+  Widget _buildImageMessage() {
+    try {
+      Uint8List bytes;
+      String base64String = widget.imageBase64!;
+      
+      // Remove data URI prefix if present
+      if (base64String.startsWith('data:image')) {
+        final commaIndex = base64String.indexOf(',');
+        if (commaIndex != -1) {
+          base64String = base64String.substring(commaIndex + 1);
+        }
+      }
+      
+      bytes = base64Decode(base64String);
+      
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            width: 200,
+            // height: 200, // Để height tự động theo tỉ lệ
+            errorBuilder: (context, error, stackTrace) {
+              return const Text('❌ Lỗi hiển thị ảnh', style: TextStyle(fontSize: 12));
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      print("Error decoding image: $e");
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildVoiceMessage() {

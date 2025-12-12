@@ -8,6 +8,7 @@ class Message {
   final String? translatedText;
   final String? messageType;
   final String? voiceUrl;
+  final String? imageBase64; // ✅ Thêm trường lưu ảnh base64/url
   final DateTime sentAt;
   final List<String>? places;
   final List<String>? suggestions;
@@ -20,8 +21,9 @@ class Message {
     required this.translatedText,
     required this.messageType,
     required this.voiceUrl,
+    this.imageBase64, // Optional
     required this.sentAt,
-    this.places, // Thay đổi thành optional
+    this.places,
     this.suggestions,
   });
 
@@ -109,7 +111,7 @@ class Message {
         // Ưu tiên lấy places đã được xử lý từ ChatService
         if (json['places'] != null) {
           if (json['places'] is List) {
-            places = (json['places'] as List).map((place) {
+            places = (json['places'] as List).map<String>((place) { // ✅ Fixed map<String>
               final placeStr = place as String;
               // Decode Unicode escape sequences khi đọc từ database
               return _decodeUnicode(placeStr);
@@ -123,7 +125,7 @@ class Message {
           if (travelData['success'] == true && travelData['search_results'] != null) {
             final searchResults = travelData['search_results'] as List;
             places = searchResults
-                .map((result) {
+                .map<String>((result) { // ✅ Fixed map<String>
                   final placeName = result['ten_dia_diem'] as String;
                   // Decode Unicode escape sequences
                   return _decodeUnicode(placeName);
@@ -158,8 +160,9 @@ class Message {
       translatedText: json['translated_text'],
       messageType: json['message_type'],
       voiceUrl: json['voice_url'],
+      imageBase64: json['image_base64'], 
       sentAt: DateTime.parse(json['sent_at']),
-      places: places, // null cho user, có thể có giá trị cho bot
+      places: places,
       suggestions: suggestions,
     );
   }
@@ -173,8 +176,9 @@ class Message {
       'translated_text': translatedText,
       'message_type': messageType,
       'voice_url': voiceUrl,
+      'image_base64': imageBase64,
       'sent_at': sentAt.toIso8601String(),
-      'places': places, // Có thể null
+      'places': places,
       'suggestions': suggestions,
     };
   }
@@ -187,8 +191,9 @@ class Message {
     String? translatedText,
     String? messageType,
     String? voiceUrl,
+    String? imageBase64,
     DateTime? sentAt,
-    List<String>? places, // Thay đổi thành nullable
+    List<String>? places,
     List<String>? suggestions,
   }) {
     return Message(
@@ -199,8 +204,9 @@ class Message {
       translatedText: translatedText ?? this.translatedText,
       messageType: messageType ?? this.messageType,
       voiceUrl: voiceUrl ?? this.voiceUrl,
+      imageBase64: imageBase64 ?? this.imageBase64,
       sentAt: sentAt ?? this.sentAt,
-      places: places ?? this.places, // Có thể null
+      places: places ?? this.places,
       suggestions: suggestions ?? this.suggestions,
     );
   }

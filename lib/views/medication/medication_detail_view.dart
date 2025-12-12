@@ -23,8 +23,15 @@ class _MedicationDetailViewState extends State<MedicationDetailView> {
   @override
   void initState() {
     super.initState();
-    // Load logs when entering detail view
-    widget.viewModel.loadLogs(scheduleId: widget.schedule.scheduleId);
+    // Load slots when entering detail view
+    // Using clean addPostFrameCallback to ensure context or safe execution if needed, 
+    // but direct call is usually fine in initState for Provider/ChangeNotifier if listen:false usage (which is default here as we use instance passed in widget).
+    // Actually, widget.viewModel is passed in, so we can just call it.
+    
+    // We defer it slightly to not block init, or just call it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.viewModel.generateSlotsForSchedule(widget.schedule);
+    });
   }
 
   @override
@@ -262,7 +269,7 @@ class _MedicationDetailViewState extends State<MedicationDetailView> {
 
             const SizedBox(height: 16),
 
-            // Lịch sử uống thuốc
+            // Lịch trình chi tiết
             ListenableBuilder(
               listenable: widget.viewModel,
               builder: (context, child) {
@@ -277,101 +284,133 @@ class _MedicationDetailViewState extends State<MedicationDetailView> {
                   );
                 }
 
-                if (widget.viewModel.logs.isEmpty) {
+                if (widget.viewModel.currentSlots.isEmpty) {
                   return _buildCard(
                     child: Column(
                       children: [
-                        const Text(
-                          'Lịch sử uống thuốc',
+                         const Text(
+                          'Lịch trình & Lịch sử',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          'Chưa có lịch sử',
-                          style: TextStyle(color: Colors.grey.shade600),
+                        Center(
+                          child: Text(
+                            'Không có dữ liệu trong khoảng thời gian này',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
                         ),
                       ],
                     ),
                   );
                 }
 
+                // Group by date to show headers
+                // But for now, just a list is fine as per request "HH:mm - dd/MM/yyyy"
+                // Let's refine the UI to look like a timeline
+
                 return _buildCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Lịch sử uống thuốc',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...widget.viewModel.logs.take(5).map((log) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              Icon(
-                                log.status == 'taken'
-                                    ? Icons.check_circle
-                                    : log.status == 'skipped'
-                                        ? Icons.cancel
-                                        : Icons.schedule,
-                                color: log.status == 'taken'
-                                    ? Colors.green
-                                    : log.status == 'skipped'
-                                        ? Colors.red
-                                        : Colors.orange,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      log.statusDisplay,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      _formatDateTime(log.scheduledTime),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (log.isTakenOnTime)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'Đúng giờ',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.green.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Lịch trình & Lịch sử',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        );
-                      }).toList(),
+                          TextButton(
+                            onPressed: () {
+                              widget.viewModel.generateSlotsForSchedule(widget.schedule);
+                            }, 
+                            child: const Text('Làm mới')
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: widget.viewModel.currentSlots.length,
+                        itemBuilder: (context, index) {
+                          final slot = widget.viewModel.currentSlots[index];
+                          final isToday = DateTime.now().day == slot.time.day && 
+                                        DateTime.now().month == slot.time.month && 
+                                        DateTime.now().year == slot.time.year;
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: isToday ? Colors.blue.shade50 : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: isToday ? Border.all(color: Colors.blue.shade200) : null,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  slot.status == 'taken' ? Icons.check_circle : 
+                                  (slot.status == 'skipped' ? Icons.cancel : 
+                                  (slot.status == 'missed' ? Icons.error_outline : Icons.schedule)),
+                                  color: slot.statusColor,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        slot.statusDisplay,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: slot.statusColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${slot.time.hour.toString().padLeft(2, '0')}:${slot.time.minute.toString().padLeft(2, '0')} - '
+                                        '${slot.time.day}/${slot.time.month}/${slot.time.year}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (slot.status == 'pending' || slot.status == 'missed')
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.check),
+                                        color: Colors.green,
+                                        onPressed: () async {
+                                          await widget.viewModel.markSlotAsTaken(slot, widget.schedule);
+                                        },
+                                        tooltip: 'Đã uống',
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        color: Colors.orange,
+                                        onPressed: () async {
+                                           await widget.viewModel.markSlotAsSkipped(slot, widget.schedule, null);
+                                        },
+                                        tooltip: 'Bỏ qua',
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 );
@@ -380,7 +419,14 @@ class _MedicationDetailViewState extends State<MedicationDetailView> {
 
             const SizedBox(height: 24),
 
-            // Nút hành động
+            // Nút hành động (General - maybe remove or keep for "Next Reminder")
+            // Keeping it for now but maybe less prominent or focusing on "Next"
+            // Actually, with the new timeline, the big bottom buttons might be confusing if they auto-select next.
+            // Let's hide them or update them to clearly say "Mark Next: [Time]"
+            // For now, I will Comment them out to force user to use the detailed list, 
+            // OR I can leave them as "Quick Action" for the immediate next slot.
+            // Decision: Comment out to avoid confusion as per user request for "detailed chart".
+            /*
             Row(
               children: [
                 Expanded(
@@ -482,6 +528,7 @@ class _MedicationDetailViewState extends State<MedicationDetailView> {
                 ),
               ],
             ),
+            */
 
             const SizedBox(height: 32),
           ],

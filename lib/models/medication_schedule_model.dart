@@ -34,7 +34,7 @@ class MedicationSchedule {
   factory MedicationSchedule.fromJson(Map<String, dynamic> json) {
     return MedicationSchedule(
       scheduleId: json['schedule_id'],
-      userId: json['user_id'],
+      userId: json['user_id'] ?? 0, // Fallback to 0 if missing to prevent crash
       medicationName: json['medication_name'],
       dosage: json['dosage'],
       frequency: json['frequency'],

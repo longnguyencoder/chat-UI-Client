@@ -72,16 +72,20 @@ class MedicationViewModel extends ChangeNotifier {
       _schedules.insert(0, newSchedule);
 
       // Schedule local notifications nếu được bật
-      if (newSchedule.enableLocalNotification && newSchedule.scheduleId != null) {
-        await _notificationService.scheduleMedicationReminder(
-          scheduleId: newSchedule.scheduleId!,
-          medicationName: newSchedule.medicationName,
-          dosage: newSchedule.dosage ?? '',
-          timeSlots: newSchedule.timeSlots,
-          startDate: newSchedule.startDate,
-          endDate: newSchedule.endDate,
-        );
-        print('✅ Scheduled notifications for ${newSchedule.medicationName}');
+      try {
+        if (newSchedule.enableLocalNotification && newSchedule.scheduleId != null) {
+          await _notificationService.scheduleMedicationReminder(
+            scheduleId: newSchedule.scheduleId!,
+            medicationName: newSchedule.medicationName,
+            dosage: newSchedule.dosage ?? '',
+            timeSlots: newSchedule.timeSlots,
+            startDate: newSchedule.startDate,
+            endDate: newSchedule.endDate,
+          );
+          print('✅ Scheduled notifications for ${newSchedule.medicationName}');
+        }
+      } catch (e) {
+        print('⚠️ Notification schedule failed: $e');
       }
 
       _isLoading = false;
@@ -113,17 +117,22 @@ class MedicationViewModel extends ChangeNotifier {
       }
 
       // Reschedule notifications
-      await _notificationService.cancelScheduleNotifications(scheduleId);
-      if (updatedSchedule.enableLocalNotification) {
-        await _notificationService.scheduleMedicationReminder(
-          scheduleId: scheduleId,
-          medicationName: updatedSchedule.medicationName,
-          dosage: updatedSchedule.dosage ?? '',
-          timeSlots: updatedSchedule.timeSlots,
-          startDate: updatedSchedule.startDate,
-          endDate: updatedSchedule.endDate,
-        );
-        print('✅ Rescheduled notifications for ${updatedSchedule.medicationName}');
+      try {
+        await _notificationService.cancelScheduleNotifications(scheduleId);
+        if (updatedSchedule.enableLocalNotification) {
+          await _notificationService.scheduleMedicationReminder(
+            scheduleId: scheduleId,
+            medicationName: updatedSchedule.medicationName,
+            dosage: updatedSchedule.dosage ?? '',
+            timeSlots: updatedSchedule.timeSlots,
+            startDate: updatedSchedule.startDate,
+            endDate: updatedSchedule.endDate,
+          );
+          print('✅ Rescheduled notifications for ${updatedSchedule.medicationName}');
+        }
+      } catch (e) {
+        print('⚠️ Notification invalid on this platform or failed: $e');
+        // Ignore notification error on web/unsupported platforms
       }
 
       _isLoading = false;
@@ -148,8 +157,12 @@ class MedicationViewModel extends ChangeNotifier {
       _schedules.removeWhere((s) => s.scheduleId == scheduleId);
 
       // Cancel all notifications for this schedule
-      await _notificationService.cancelScheduleNotifications(scheduleId);
-      print('✅ Cancelled notifications for schedule $scheduleId');
+      try {
+        await _notificationService.cancelScheduleNotifications(scheduleId);
+        print('✅ Cancelled notifications for schedule $scheduleId');
+      } catch (e) {
+        print('⚠️ Notification cancel failed: $e');
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -409,9 +422,205 @@ class MedicationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ========================================================================
+  // SLOTS GENERATION & HANDLING
+  // ========================================================================
+
+  List<MedicationSlot> _currentSlots = [];
+  List<MedicationSlot> get currentSlots => _currentSlots;
+
+  /// Generate slots for a specific schedule within a date range
+  Future<void> generateSlotsForSchedule(MedicationSchedule schedule, {DateTime? from, DateTime? to}) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final now = DateTime.now();
+      // Default: Last 7 days to next 30 days (or end date)
+      final startDate = from ?? now.subtract(const Duration(days: 7));
+      final endDate = to ?? (schedule.endDate != null && schedule.endDate!.isBefore(now.add(const Duration(days: 30))) 
+          ? schedule.endDate! 
+          : now.add(const Duration(days: 30)));
+
+      // 1. Load existing logs for this period
+      final logs = await _medicationService.getLogs(
+        userId: userId,
+        scheduleId: schedule.scheduleId,
+        fromDate: startDate.toIso8601String().split('T')[0],
+        toDate: endDate.toIso8601String().split('T')[0],
+      );
+
+      // 2. Generate theoretical slots
+      List<MedicationSlot> slots = [];
+      DateTime current = DateTime(startDate.year, startDate.month, startDate.day);
+      final listEnd = DateTime(endDate.year, endDate.month, endDate.day);
+
+      while (current.isBefore(listEnd) || current.isAtSameMomentAs(listEnd)) {
+        // Skip dates before schedule start
+        if (current.isBefore(DateTime(schedule.startDate.year, schedule.startDate.month, schedule.startDate.day))) {
+          current = current.add(const Duration(days: 1));
+          continue;
+        }
+
+        // Apply frequency logic (simplified for daily/mult-daily)
+        // Note: For weekly or custom, we need more complex logic. 
+        // Assuming daily/time_slots for now based on current app usage.
+        
+        for (final timeStr in schedule.timeSlots) {
+          final parts = timeStr.split(':');
+          final hour = int.parse(parts[0]);
+          final minute = int.parse(parts[1]);
+          final slotTime = DateTime(current.year, current.month, current.day, hour, minute);
+
+          // Find matching log
+          // We look for a log that matches this scheduled time
+          MedicationLog? matchingLog;
+          try {
+            matchingLog = logs.firstWhere((log) {
+               // Initial simpler check: same day and same scheduled time
+               // Note: Backend might store scheduledTime differently based on how it was created
+               // We should compare fuzzy logic if needed, but strict comparison is best for "slots"
+               final logTime = log.scheduledTime;
+               return logTime.year == slotTime.year && 
+                      logTime.month == slotTime.month && 
+                      logTime.day == slotTime.day &&
+                      logTime.hour == slotTime.hour &&
+                      logTime.minute == slotTime.minute;
+            });
+          } catch (e) {
+            // No matching log found
+          }
+
+          slots.add(MedicationSlot(
+            scheduleId: schedule.scheduleId!,
+            time: slotTime,
+            status: matchingLog?.status ?? (slotTime.isBefore(now) ? 'missed' : 'pending'),
+            logId: matchingLog?.logId,
+          ));
+        }
+
+        current = current.add(const Duration(days: 1));
+      }
+
+      // Sort: Newest first? Or Oldest first? 
+      // User likely wants to see today/upcoming. 
+      // Let's sort chronological (Oldest -> Newest) so they can scroll down to today.
+      slots.sort((a, b) => a.time.compareTo(b.time));
+
+      _currentSlots = slots;
+      _isLoading = false;
+      notifyListeners();
+
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Mark a specific slot as taken
+  Future<bool> markSlotAsTaken(MedicationSlot slot, MedicationSchedule schedule) async {
+    try {
+      if (slot.logId != null) {
+        // Update existing log
+        await _medicationService.logMedication(
+          scheduleId: slot.scheduleId,
+          userId: userId,
+          scheduledTime: slot.time,
+          status: 'taken',
+          actualTime: DateTime.now(),
+          logId: slot.logId,
+        );
+      } else {
+        // Create new log
+        await _medicationService.logMedication(
+          scheduleId: slot.scheduleId,
+          userId: userId,
+          scheduledTime: slot.time,
+          status: 'taken',
+          actualTime: DateTime.now(),
+        );
+      }
+      
+      // Refresh slots
+      await generateSlotsForSchedule(schedule);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Mark a specific slot as skipped
+  Future<bool> markSlotAsSkipped(MedicationSlot slot, MedicationSchedule schedule, String? reason) async {
+    try {
+      if (slot.logId != null) {
+        await _medicationService.logMedication(
+          scheduleId: slot.scheduleId,
+          userId: userId,
+          scheduledTime: slot.time,
+          status: 'skipped',
+          notes: reason,
+          logId: slot.logId,
+        );
+      } else {
+        await _medicationService.logMedication(
+          scheduleId: slot.scheduleId,
+          userId: userId,
+          scheduledTime: slot.time,
+          status: 'skipped',
+          notes: reason,
+        );
+      }
+
+      await generateSlotsForSchedule(schedule);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Refresh tất cả dữ liệu
   Future<void> refresh() async {
     await loadSchedules();
     await loadStats();
   }
 }
+
+class MedicationSlot {
+  final int scheduleId;
+  final DateTime time;
+  final String status; // 'pending', 'taken', 'skipped', 'missed'
+  final int? logId;
+
+  MedicationSlot({
+    required this.scheduleId,
+    required this.time,
+    required this.status,
+    this.logId,
+  });
+
+  String get statusDisplay {
+    switch (status) {
+      case 'taken': return 'Đã uống';
+      case 'skipped': return 'Bỏ qua';
+      case 'pending': return 'Chưa uống';
+      case 'missed': return 'Quên uống';
+      default: return status;
+    }
+  }
+
+  Color get statusColor {
+    switch (status) {
+      case 'taken': return Colors.green;
+      case 'skipped': return Colors.orange;
+      case 'pending': return Colors.blue;
+      case 'missed': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+}
+

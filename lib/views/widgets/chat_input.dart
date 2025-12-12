@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 
+
+import 'package:flutter/foundation.dart'; // For kIsWeb
+
 class ChatInput extends StatefulWidget {
-  final Function(String) onSendMessage;
+  final Function(String, XFile?) onSendMessage; // ✅ Changed File? to XFile?
   final bool isEnabled;
 
   const ChatInput({
@@ -23,6 +28,11 @@ class ChatInput extends StatefulWidget {
 class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   bool _canSend = false;
+  
+  // Image Picker State
+  XFile? _selectedImage; // ✅ Changed File? to XFile?
+  final ImagePicker _picker = ImagePicker();
+
   Timer? _recordingTimer;
   int _recordingDuration = 0;
   late AnimationController _pulseController;
@@ -46,7 +56,10 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   }
 
   void _onTextChanged() {
-    final canSend = _controller.text.trim().isNotEmpty;
+    final hasText = _controller.text.trim().isNotEmpty;
+    final hasImage = _selectedImage != null;
+    final canSend = hasText || hasImage;
+
     if (canSend != _canSend) {
       setState(() {
         _canSend = canSend;
@@ -58,14 +71,53 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  // ✅ Hàm chọn ảnh
+  Future<void> _pickImage() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024, // Giới hạn kích thước
+        maxHeight: 1024,
+        imageQuality: 80, // Giảm dung lượng
+      );
+      
+      if (photo != null) {
+        setState(() {
+          _selectedImage = photo; // ✅ Keep as XFile
+          _canSend = true;
+        });
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+    }
+  }
+
+  // ✅ Hàm xóa ảnh
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _onTextChanged();
+    });
   }
 
   void _sendMessage() {
     if (_canSend && widget.isEnabled) {
       final message = _controller.text.trim();
+      final image = _selectedImage;
+
+      // Pass both text and image
+      widget.onSendMessage(message, image);
+      
+      // Reset state
       _controller.clear();
-      widget.onSendMessage(message);
+      setState(() {
+        _selectedImage = null;
+        _canSend = false;
+      });
     }
   }
 
@@ -131,10 +183,61 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
             ],
           ),
           child: SafeArea(
-            child:
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ✅ Hiển thị Preview ảnh trước khi gửi
+                if (_selectedImage != null && !viewModel.isRecording)
+                  Container(
+                    height: 100,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: kIsWeb
+                                ? Image.network(
+                                    _selectedImage!.path, // ✅ Web uses blob URL
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.file(
+                                    File(_selectedImage!.path), // ✅ Mobile uses File
+                                    height: 100,
+                                    width: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          Positioned(
+                            top: -8,
+                            right: -8,
+                            child: GestureDetector(
+                              onTap: _removeImage,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(Icons.close, size: 16, color: Colors.black54),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 viewModel.isRecording
                     ? _buildRecordingUI(viewModel)
                     : _buildNormalUI(viewModel),
+              ],
+            ),
           ),
         );
       },
@@ -276,6 +379,13 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   _buildNormalUI(MainViewModel viewModel) {
     return Row(
       children: [
+        // ✅ Nút chọn ảnh
+        IconButton(
+          icon: const Icon(Icons.image, color: Colors.blue),
+          onPressed: _pickImage,
+          tooltip: 'Gửi ảnh',
+        ),
+
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -300,7 +410,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                 controller: _controller,
                 enabled: widget.isEnabled && !viewModel.isRecording,
                 decoration: const InputDecoration(
-                  hintText: 'Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)',
+                  hintText: 'Nhập tin nhắn...',
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 16,
@@ -318,66 +428,66 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
         ),
         const SizedBox(width: 8),
 
-        // Nút microphone
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.red.shade400,
-            shape: BoxShape.circle,
+        // Nút microphone (chỉ hiện khi không có text và không có ảnh)
+        if (!_canSend) ...[
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red.shade400,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed:
+                  widget.isEnabled && !viewModel.isSending
+                      ? _startVoiceRecording
+                      : null,
+              icon: const Icon(Icons.mic, color: Colors.white, size: 20),
+              tooltip: 'Ghi âm tin nhắn',
+            ),
           ),
-          child: IconButton(
-            onPressed:
-                widget.isEnabled && !viewModel.isSending
-                    ? _startVoiceRecording
-                    : null,
-            icon: const Icon(Icons.mic, color: Colors.white, size: 20),
-            tooltip: 'Ghi âm tin nhắn',
+        ] else ...[
+          // Nút gửi tin nhắn (khi có text hoặc ảnh)
+          Container(
+            decoration: BoxDecoration(
+              gradient: _canSend && widget.isEnabled && !viewModel.isRecording
+                  ? const LinearGradient(
+                      colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: !(_canSend && widget.isEnabled && !viewModel.isRecording)
+                  ? Colors.grey.shade300
+                  : null,
+              shape: BoxShape.circle,
+              boxShadow: _canSend && widget.isEnabled && !viewModel.isRecording
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF4A90E2).withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: IconButton(
+              onPressed:
+                  _canSend && widget.isEnabled && !viewModel.isRecording
+                      ? _sendMessage
+                      : null,
+              icon:
+                  viewModel.isSending
+                      ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                      : const Icon(Icons.send, color: Colors.white, size: 20),
+            ),
           ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // Nút gửi tin nhắn
-        Container(
-          decoration: BoxDecoration(
-            gradient: _canSend && widget.isEnabled && !viewModel.isRecording
-                ? const LinearGradient(
-                    colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: !(_canSend && widget.isEnabled && !viewModel.isRecording)
-                ? Colors.grey.shade300
-                : null,
-            shape: BoxShape.circle,
-            boxShadow: _canSend && widget.isEnabled && !viewModel.isRecording
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF4A90E2).withOpacity(0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: IconButton(
-            onPressed:
-                _canSend && widget.isEnabled && !viewModel.isRecording
-                    ? _sendMessage
-                    : null,
-            icon:
-                viewModel.isSending
-                    ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                    : const Icon(Icons.send, color: Colors.white, size: 20),
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -393,9 +503,11 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
     _amplitudeSubscription = viewModel.getAmplitudeStream()?.listen((
       amplitude,
     ) {
-      setState(() {
-        _currentAmplitude = amplitude.current;
-      });
+      if (mounted) {
+        setState(() {
+          _currentAmplitude = amplitude.current;
+        });
+      }
     });
   }
 }
