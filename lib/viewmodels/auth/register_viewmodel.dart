@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/auth/auth_service.dart';
 
 class RegisterViewModel extends ChangeNotifier {
@@ -79,7 +80,7 @@ class RegisterViewModel extends ChangeNotifier {
     }
   }
   void goToLogin(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/login');
+    context.go('/login');
   }
 
   @override

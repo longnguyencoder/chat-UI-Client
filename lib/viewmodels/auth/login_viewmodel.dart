@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/services/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,6 +86,12 @@ class LoginViewModel extends ChangeNotifier {
         await prefs.setString('token', result['token']);
       }
 
+      // ✅ Lưu isLoggedIn flag để router redirect hoạt động
+      if (result['success'] as bool) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('user');
       if (userJson != null) {
@@ -103,11 +110,11 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   void goToRegister(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/register');
+    context.go('/register');
   }
 
   void goToForgotPassword(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/forgot_password');
+    context.go('/forgot_password');
   }
 
   @override

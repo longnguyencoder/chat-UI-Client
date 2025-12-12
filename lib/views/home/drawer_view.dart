@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/views/home/health_profile_view.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
@@ -430,12 +431,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                     ),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MedicationListView(),
-                        ),
-                      );
+                      context.push('/medications');
                     },
                   ),
 
@@ -464,12 +460,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                     ),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HealthProfileView(),
-                        ),
-                      );
+                      context.push('/health-profile');
                     },
                   ),
 
@@ -502,12 +493,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SettingView(),
-                          ),
-                        );
+                        context.push('/settings');
                       },
                     ),
                   ),

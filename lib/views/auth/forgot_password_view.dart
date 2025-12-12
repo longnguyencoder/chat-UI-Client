@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/viewmodels/auth/forgot_password_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +22,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            onPressed: () => context.go('/login'),
           ),
         ),
         body: SafeArea(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/services/auth/auth_service.dart';
 
 class ForgotPasswordViewModel extends ChangeNotifier {
@@ -65,6 +66,6 @@ class ForgotPasswordViewModel extends ChangeNotifier {
   }
 
   void goToLogin(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/login');
+    context.go('/login');
   }
 }

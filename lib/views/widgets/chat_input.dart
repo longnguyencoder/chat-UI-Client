@@ -115,14 +115,18 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
     return Consumer<MainViewModel>(
       builder: (context, viewModel, child) {
         return Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
             boxShadow: [
               BoxShadow(
                 offset: const Offset(0, -2),
-                blurRadius: 8,
-                color: const Color.fromARGB(25,0,0,0),
+                blurRadius: 12,
+                color: Colors.black.withOpacity(0.08),
               ),
             ],
           ),
@@ -335,11 +339,26 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
         // Nút gửi tin nhắn
         Container(
           decoration: BoxDecoration(
-            color:
-                _canSend && widget.isEnabled && !viewModel.isRecording
-                    ? Colors.blue.shade600
-                    : Colors.grey.shade300,
+            gradient: _canSend && widget.isEnabled && !viewModel.isRecording
+                ? const LinearGradient(
+                    colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: !(_canSend && widget.isEnabled && !viewModel.isRecording)
+                ? Colors.grey.shade300
+                : null,
             shape: BoxShape.circle,
+            boxShadow: _canSend && widget.isEnabled && !viewModel.isRecording
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF4A90E2).withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: IconButton(
             onPressed:

@@ -24,6 +24,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/user_model.dart';
+import 'router_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,25 +84,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Chatbots Medical-client',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
       ),
-
-      initialRoute: isLoggedIn ? '/home' : '/login',
-      routes: {
-        '/login': (context) => const LoginView(),
-        '/register': (context) => const RegisterView(),
-        '/verify_otp': (context) => const VerifyOtpView(),
-        '/verify_otp_forgot_pass': (context) => const VerifyOtpForgotPassView(),
-        '/home': (context) => const MainView(),
-        '/setting': (context) => const SettingView(),
-        '/draw': (context) => const DrawerView(),
-        '/forgot_password': (context) => const ForgotPasswordView(),
-        '/reset_password': (context) => const ResetPasswordView(email: '',otp: ''),
-      },
+      routerConfig: AppRouter.createRouter(),
     );
   }
 }

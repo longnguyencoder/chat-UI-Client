@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
@@ -239,6 +240,21 @@ class MainViewModel extends ChangeNotifier {
         _setLoading(false);
       }
     }
+  }
+
+  // Load conversation from URL (for deep linking)
+  Future<void> loadConversationFromUrl(int conversationId) async {
+    if (!hasValidUser) return;
+    
+    print("🔗 Loading conversation from URL: $conversationId");
+    
+    // First, ensure conversations are loaded
+    if (_conversations.isEmpty) {
+      await loadUserConversations();
+    }
+    
+    // Then load the specific conversation
+    await loadConversation(conversationId);
   }
 
   // Force reset conversation state (dùng khi có lỗi)

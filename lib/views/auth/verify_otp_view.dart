@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -111,7 +112,7 @@ class _VerifyOtpViewState extends State<VerifyOtpView>{
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushReplacementNamed(context, '/register'),
+                onPressed: () => context.go('/register'),
               ),
             ),
             body: SafeArea(
@@ -247,7 +248,7 @@ class _VerifyOtpViewState extends State<VerifyOtpView>{
                                 backgroundColor: Colors.green,
                               ),
                             );
-                            Navigator.pushReplacementNamed(context, '/login');
+                            context.go('/login');
                           }
                         }
                             : null,

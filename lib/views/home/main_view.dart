@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
+import 'package:mobilev2/views/widgets/bot_avatar.dart';
 import 'package:mobilev2/views/widgets/chat_input.dart';
+import 'package:mobilev2/views/widgets/quick_actions.dart';
 import 'package:mobilev2/views/widgets/scroll_to_bottom_button.dart';
+import 'package:mobilev2/views/widgets/typing_indicator.dart';
 import 'package:provider/provider.dart';
 import '../widgets/chat_bubble.dart';
 
 class MainView extends StatefulWidget {
-  const MainView({super.key});
+  final int? conversationId;
+  
+  const MainView({super.key, this.conversationId});
 
   @override
   State<MainView> createState() => _MainViewState();
@@ -21,6 +26,14 @@ class _MainViewState extends State<MainView> {
   @override
   void initState() {
     super.initState();
+    
+    // Load conversation from URL parameter if provided (deep linking)
+    if (widget.conversationId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final viewModel = context.read<MainViewModel>();
+        viewModel.loadConversationFromUrl(widget.conversationId!);
+      });
+    }
   }
 
   @override
@@ -96,7 +109,7 @@ class _MainViewState extends State<MainView> {
         ],
       ),
       drawer: const DrawerView(),
-      backgroundColor: const Color(0xFFF7F7F8),
+      backgroundColor: const Color(0xFFF7F9FC),
       body: Consumer<MainViewModel>(
         builder: (context, viewModel, child) {
           return Column(
@@ -163,6 +176,10 @@ class _MainViewState extends State<MainView> {
 
               const SizedBox(height: 8),
 
+              // Quick Actions
+              if (viewModel.messages.isEmpty)
+                const QuickActions(),
+
               // Danh sách tin nhắn
               Expanded(
                 child: Stack(
@@ -186,8 +203,6 @@ class _MainViewState extends State<MainView> {
                   ],
                 ),
               ),
-
-              const Divider(height: 1),
 
               // Chat input
               ChatInput(
@@ -260,52 +275,16 @@ class _MainViewState extends State<MainView> {
       padding: const EdgeInsets.all(16),
       itemCount: viewModel.messages.length + (viewModel.isSending ? 1 : 0),
       itemBuilder: (context, index) {
-        // Hiển thị loading indicator khi đang gửi
+        // Hiển thị typing indicator khi đang gửi
         if (index == viewModel.messages.length && viewModel.isSending) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.smart_toy, color: Colors.grey),
-                ),
+                const BotAvatar(isTyping: true, size: 40),
                 const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.blue.shade600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "AI đang suy nghĩ...",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
+                const TypingIndicator(),
               ],
             ),
           );
@@ -336,19 +315,7 @@ class _MainViewState extends State<MainView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!isUser) ...[
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade600,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.smart_toy,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
+                  const BotAvatar(isTyping: false, size: 32),
                   const SizedBox(width: 8),
                 ],
                 Flexible(

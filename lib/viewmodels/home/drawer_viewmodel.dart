@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/conversation_model.dart';
@@ -119,6 +120,9 @@ class DrawerViewModel extends ChangeNotifier {
       ) async {
     // Đóng drawer trước
     Navigator.of(context).pop();
+    
+    // Navigate to conversation URL
+    context.go('/chat/${conversation.conversationId}');
 
     print("====================onConversationTap====================");
     print("Conversation ID: ${conversation.conversationId}");
@@ -363,6 +367,9 @@ class DrawerViewModel extends ChangeNotifier {
 
               try {
                 await mainViewModel.startNewConversation();
+                
+                // Navigate to home (new conversation)
+                context.go('/home');
 
                 // Refresh drawer conversations
                 await loadConversations();

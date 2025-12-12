@@ -150,8 +150,17 @@ class _ChatBubbleState extends State<ChatBubble> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color:
-                  widget.isUser ? Colors.blue.shade600 : Colors.grey.shade200,
+              gradient: widget.isUser
+                  ? const LinearGradient(
+                      colors: [Color(0xFFE8EAF6), Color(0xFFD1D5E8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(20).copyWith(
                 bottomRight:
                     widget.isUser
@@ -162,6 +171,15 @@ class _ChatBubbleState extends State<ChatBubble> {
                         ? const Radius.circular(20)
                         : const Radius.circular(4),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.isUser
+                      ? Colors.black.withOpacity(0.05)
+                      : const Color(0xFF4A90E2).withOpacity(0.3),
+                  blurRadius: widget.isUser ? 4 : 8,
+                  offset: Offset(0, widget.isUser ? 2 : 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +194,8 @@ class _ChatBubbleState extends State<ChatBubble> {
                     widget.message,
                     style: TextStyle(
                       fontSize: 16,
-                      color: widget.isUser ? Colors.white : Colors.black87,
+                      color: widget.isUser ? const Color(0xFF2C3E50) : Colors.white,
+                      height: 1.4,
                     ),
                   ),
               ],

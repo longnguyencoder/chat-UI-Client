@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth/login_viewmodel.dart';
 
@@ -210,7 +211,7 @@ class _LoginViewState extends State<LoginView> {
                                     ? () async {
                                         final success = await viewModel.login(context);
                                         if (success && context.mounted) {
-                                          Navigator.pushReplacementNamed(context, '/home');
+                                          context.go('/home');
                                         }
                                       }
                                     : null,
