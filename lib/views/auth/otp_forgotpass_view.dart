@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobilev2/viewmodels/auth/otp_forgotpass_view_model.dart';
 import 'package:provider/provider.dart';
 
 class VerifyOtpForgotPassView extends StatefulWidget {
-  const VerifyOtpForgotPassView({super.key});
+  final String email;
+  const VerifyOtpForgotPassView({super.key, this.email = ''});
 
   @override
   State<VerifyOtpForgotPassView> createState() => _OtpForgotPassViewState();
@@ -17,24 +19,13 @@ class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
   @override
   void initState() {
     super.initState();
-    _viewModel = VerifyOtpForgotPassViewModel();
+    _viewModel = VerifyOtpForgotPassViewModel(email: widget.email);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    if (!_isInitialized) {
-      // Lấy email từ route arguments và cập nhật vào ViewModel
-      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      final email = arguments?['email'] ?? '';
-
-      // Cập nhật email vào ViewModel
-      if (email.isNotEmpty) {
-        _viewModel.updateEmail(email);
-      }
-      _isInitialized = true;
-    }
+    // No longer need to extract from ModalRoute if passed via constructor
   }
 
   @override
@@ -58,7 +49,7 @@ class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
           ),
         ),
         body: SafeArea(

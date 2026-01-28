@@ -40,16 +40,28 @@ class MedicationViewModel extends ChangeNotifier {
   // SCHEDULES
   // ========================================================================
 
-  /// Load danh sách lịch nhắc nhở
+
+
+  /// Load danh sách lịch nhắc nhở VÀ logs hôm nay để check status
   Future<void> loadSchedules({bool? isActive}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
+      // 1. Load schedules
       _schedules = await _medicationService.getSchedules(
         userId: userId,
         isActive: isActive,
+      );
+
+      // 2. Load logs cho hôm nay để biết trạng thái
+      // Lưu ý: loadLogs sẽ cập nhật biến _logs
+      // Ta lấy log từ đầu ngày đến cuối ngày nay (hoặc rộng hơn chút nếu cần)
+      final now = DateTime.now();
+      await loadLogs(
+        fromDate: now, 
+        toDate: now,
       );
 
       _isLoading = false;
@@ -398,22 +410,79 @@ class MedicationViewModel extends ChangeNotifier {
     return count;
   }
 
-  /// Lấy lịch nhắc nhở tiếp theo
+  /// Lấy lịch nhắc nhở tiếp theo (có kiểm tra đã uống chưa)
   MedicationSchedule? getNextReminder() {
     DateTime? earliestTime;
     MedicationSchedule? nextSchedule;
 
     for (final schedule in activeSchedules) {
+      if (!schedule.isActive) continue;
+
+      // Logic cũ: chỉ lấy thời gian tương lai
+      // Logic mới: cần kiểm tra xem thời gian đó đã uống chưa
+      // Tuy nhiên, hàm này dùng để hiển thị "Next Reminder" global cho toàn bộ app (nếu có widget dashboard).
+      // Ở đây ta giữ logic tìm thời gian, nhưng lọc bớt các slot đã "taken" trong ngày hôm nay.
+      
       final nextTime = schedule.nextReminder;
       if (nextTime != null) {
-        if (earliestTime == null || nextTime.isBefore(earliestTime)) {
-          earliestTime = nextTime;
-          nextSchedule = schedule;
+        // Kiểm tra xem nextTime này đã có log 'taken' chưa
+        final isTaken = _checkIfTaken(schedule.scheduleId!, nextTime);
+        if (!isTaken) {
+          if (earliestTime == null || nextTime.isBefore(earliestTime)) {
+            earliestTime = nextTime;
+            nextSchedule = schedule;
+          }
+        } else {
+            // Nếu slot này đã taken, ta cần tìm slot TIẾP THEO của schedule này
+            // (Hiện tại schedule.nextReminder chỉ trả về 1 mốc sớm nhất chưa qua giờ hiện tại (hoặc ngày mai))
+            // Để đơn giản, nếu đã taken slot này, ta bỏ qua schedule này trong việc tìm "Next Reminder" *ngay lúc này*
+            // Hoặc lý tưởng hơn là tìm slot sau đó nữa.
         }
       }
     }
 
     return nextSchedule;
+  }
+
+  /// Kiểm tra xem một mốc thời gian cụ thể của schedule đã được uống chưa
+  bool _checkIfTaken(int scheduleId, DateTime scheduledTime) {
+    if (_logs.isEmpty) return false;
+    
+    // Tìm log khớp với scheduleId và scheduledTime (trong khoảng < 1 phút hoặc cùng ngày cùng giờ phút)
+    try {
+        final hasLog = _logs.any((log) {
+            if (log.scheduleId != scheduleId) return false;
+            if (log.status != 'taken') return false; // Chỉ quan tâm đã uống
+            
+            final logTime = log.scheduledTime;
+            // So sánh chính xác phút
+            return logTime.year == scheduledTime.year && 
+                   logTime.month == scheduledTime.month && 
+                   logTime.day == scheduledTime.day &&
+                   logTime.hour == scheduledTime.hour &&
+                   logTime.minute == scheduledTime.minute;
+        });
+        return hasLog;
+    } catch (e) {
+        return false;
+    }
+  }
+
+  /// Hàm helper cho View: Trạng thái của lần nhắc tiếp theo
+  /// Trả về: 
+  /// - null: Không có nhắc nhở nào sắp tới
+  /// - Map: {'time': DateTime, 'isTaken': bool, 'status': String}
+  Map<String, dynamic>? getNextReminderStatus(MedicationSchedule schedule) {
+      final nextTime = schedule.nextReminder;
+      if (nextTime == null) return null;
+
+      final isTaken = _checkIfTaken(schedule.scheduleId!, nextTime);
+      
+      return {
+          'time': nextTime,
+          'isTaken': isTaken,
+          'status': isTaken ? 'taken' : 'pending',
+      };
   }
 
   /// Clear error

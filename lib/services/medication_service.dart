@@ -77,9 +77,20 @@ class MedicationService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final schedules = data['data'] ?? data['schedules'] ?? [];
         
-        return (schedules as List)
+        // Handle various response structures
+        List<dynamic> schedulesList = [];
+        if (data is List) {
+          schedulesList = data;
+        } else if (data['data'] != null) {
+          schedulesList = data['data'];
+        } else if (data['schedules'] != null) {
+          schedulesList = data['schedules'];
+        }
+
+        print('📋 Parsed ${schedulesList.length} schedules for User ID $userId');
+        
+        return schedulesList
             .map((json) => MedicationSchedule.fromJson(json))
             .toList();
       } else if (response.statusCode == 401) {
@@ -222,7 +233,7 @@ class MedicationService {
       // Backend expects 'log_id' and 'status' as required fields
       // Sử dụng logId nếu có, nếu không dùng scheduleId
       final requestBody = {
-        'log_id': logId ?? scheduleId,
+        if (logId != null) 'log_id': logId,
         'schedule_id': scheduleId,
         'status': status,
         'user_id': userId,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:mobilev2/models/hospital_map_data.dart';
 
 class Message {
   final int messageId;
@@ -9,9 +10,11 @@ class Message {
   final String? messageType;
   final String? voiceUrl;
   final String? imageBase64; // ✅ Thêm trường lưu ảnh base64/url
+  final String? pdfName; // ✅ Thêm trường lưu tên file PDF
   final DateTime sentAt;
   final List<String>? places;
   final List<String>? suggestions;
+  final List<HospitalMapData>? mapData; // ✅ Thêm trường lưu dữ liệu bản đồ bệnh viện
 
   Message({
     required this.messageId,
@@ -22,9 +25,11 @@ class Message {
     required this.messageType,
     required this.voiceUrl,
     this.imageBase64, // Optional
+    this.pdfName, // Optional
     required this.sentAt,
     this.places,
     this.suggestions,
+    this.mapData, // Optional
   });
 
   // Helper method để decode Unicode escape sequences và fix UTF-8 encoding issues
@@ -152,6 +157,22 @@ class Message {
       suggestions = null;
     }
 
+    // Xử lý map_data - chỉ bot messages mới có map_data
+    List<HospitalMapData>? mapData;
+    if (isBotMessage && json['map_data'] != null) {
+      try {
+        if (json['map_data'] is List) {
+          mapData = (json['map_data'] as List)
+              .map((item) => HospitalMapData.fromJson(item as Map<String, dynamic>))
+              .toList();
+          print('✅ Parsed ${mapData.length} hospitals from map_data');
+        }
+      } catch (e) {
+        print('Lỗi khi xử lý map_data trong Message.fromJson: $e');
+        mapData = null;
+      }
+    }
+
     return Message(
       messageId: json['message_id'] ?? 0,
       conversationId: json['conversation_id'] ?? 0,
@@ -161,9 +182,11 @@ class Message {
       messageType: json['message_type'],
       voiceUrl: json['voice_url'],
       imageBase64: json['image_base64'], 
+      pdfName: json['pdf_name'],
       sentAt: DateTime.parse(json['sent_at']),
       places: places,
       suggestions: suggestions,
+      mapData: mapData,
     );
   }
 
@@ -177,9 +200,11 @@ class Message {
       'message_type': messageType,
       'voice_url': voiceUrl,
       'image_base64': imageBase64,
+      'pdf_name': pdfName,
       'sent_at': sentAt.toIso8601String(),
       'places': places,
       'suggestions': suggestions,
+      'map_data': mapData?.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -195,6 +220,7 @@ class Message {
     DateTime? sentAt,
     List<String>? places,
     List<String>? suggestions,
+    List<HospitalMapData>? mapData,
   }) {
     return Message(
       messageId: messageId ?? this.messageId,
@@ -208,6 +234,7 @@ class Message {
       sentAt: sentAt ?? this.sentAt,
       places: places ?? this.places,
       suggestions: suggestions ?? this.suggestions,
+      mapData: mapData ?? this.mapData,
     );
   }
 }

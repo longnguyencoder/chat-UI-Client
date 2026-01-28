@@ -10,9 +10,10 @@ import 'package:record/record.dart';
 
 
 import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:file_picker/file_picker.dart';
 
 class ChatInput extends StatefulWidget {
-  final Function(String, XFile?) onSendMessage; // ✅ Changed File? to XFile?
+  final Function(String, XFile?, PlatformFile?) onSendMessage; // ✅ Added PlatformFile?
   final bool isEnabled;
 
   const ChatInput({
@@ -29,8 +30,9 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   bool _canSend = false;
   
-  // Image Picker State
-  XFile? _selectedImage; // ✅ Changed File? to XFile?
+  // Image & File Picker State
+  XFile? _selectedImage;
+  PlatformFile? _selectedFile; // ✅ Added PDF file state
   final ImagePicker _picker = ImagePicker();
 
   Timer? _recordingTimer;
@@ -58,7 +60,8 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
   void _onTextChanged() {
     final hasText = _controller.text.trim().isNotEmpty;
     final hasImage = _selectedImage != null;
-    final canSend = hasText || hasImage;
+    final hasFile = _selectedFile != null;
+    final canSend = hasText || hasImage || hasFile;
 
     if (canSend != _canSend) {
       setState(() {
@@ -96,6 +99,26 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
     }
   }
 
+  // ✅ Hàm chọn PDF
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: true,
+      );
+
+      if (result != null) {
+        setState(() {
+          _selectedFile = result.files.single;
+          _canSend = true;
+        });
+      }
+    } catch (e) {
+      print("Error picking file: $e");
+    }
+  }
+
   // ✅ Hàm xóa ảnh
   void _removeImage() {
     setState(() {
@@ -104,18 +127,28 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
     });
   }
 
+  // ✅ Hàm xóa file
+  void _removeFile() {
+    setState(() {
+      _selectedFile = null;
+      _onTextChanged();
+    });
+  }
+
   void _sendMessage() {
     if (_canSend && widget.isEnabled) {
       final message = _controller.text.trim();
       final image = _selectedImage;
+      final file = _selectedFile;
 
-      // Pass both text and image
-      widget.onSendMessage(message, image);
+      // Pass text, image and file
+      widget.onSendMessage(message, image, file);
       
       // Reset state
       _controller.clear();
       setState(() {
         _selectedImage = null;
+        _selectedFile = null;
         _canSend = false;
       });
     }
@@ -230,6 +263,45 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+
+                // ✅ Hiển thị Preview PDF trước khi gửi
+                if (_selectedFile != null && !viewModel.isRecording)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.picture_as_pdf, color: Colors.red, size: 32),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedFile!.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                "${(_selectedFile!.size / 1024).toStringAsFixed(1)} KB",
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: _removeFile,
+                        ),
+                      ],
                     ),
                   ),
 
@@ -384,6 +456,13 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
           icon: const Icon(Icons.image, color: Colors.blue),
           onPressed: _pickImage,
           tooltip: 'Gửi ảnh',
+        ),
+
+        // ✅ Nút chọn PDF
+        IconButton(
+          icon: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
+          onPressed: _pickFile,
+          tooltip: 'Gửi PDF xét nghiệm',
         ),
 
         Expanded(

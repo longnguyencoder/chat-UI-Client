@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -309,9 +310,10 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // Gửi tin nhắn dạng text
-  Future<void> sendMessage(String messageText, {XFile? imageFile}) async {
-    // Cho phép gửi nếu có text HOẶC có ảnh
-    if (!hasValidUser || _currentConversation == null || (messageText.trim().isEmpty && imageFile == null)) return;
+  Future<void> sendMessage(String messageText, {XFile? imageFile, PlatformFile? pdfFile}) async {
+    // Cho phép gửi nếu có text HOẶC có ảnh HOẶC có file
+    if (!hasValidUser || _currentConversation == null || 
+        (messageText.trim().isEmpty && imageFile == null && pdfFile == null)) return;
 
     _setSending(true);
     clearError();
@@ -331,6 +333,7 @@ class MainViewModel extends ChangeNotifier {
         messageText: messageText,
         token: token,
         imageFile: imageFile, // ✅ Truyền ảnh
+        pdfFile: pdfFile, // ✅ Truyền file PDF
       );
 
       // Parse response data

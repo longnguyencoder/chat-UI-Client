@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -11,6 +12,7 @@ import 'package:mobilev2/viewmodels/auth/reset_password_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
+import 'package:mobilev2/viewmodels/medical_report_viewmodel.dart';
 import 'package:mobilev2/views/auth/forgot_password_view.dart';
 import 'package:mobilev2/views/auth/login_view.dart';
 import 'package:mobilev2/views/auth/otp_forgotpass_view.dart';
@@ -37,13 +39,16 @@ void main() async {
     user = UserModel.fromJson(jsonDecode(userJson));
   }
   await dotenv.load(fileName: ".env");
-  String token = dotenv.env["MAPBOX_ACCESS_TOKEN"] ?? '';
+  String mapboxToken = dotenv.env["MAPBOX_ACCESS_TOKEN"] ?? '';
+  final token = prefs.getString('token');
   
   // Wrap Mapbox initialization to prevent crash on web
-  try {
-    MapboxOptions.setAccessToken(token);
-  } catch (e) {
-    print("⚠️ Mapbox not supported on this platform: $e");
+  if (!kIsWeb) {
+    try {
+      MapboxOptions.setAccessToken(mapboxToken);
+    } catch (e) {
+      print("⚠️ Mapbox not supported on this platform: $e");
+    }
   }
   runApp(
     MultiProvider(
@@ -54,7 +59,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VerifyOtpForgotPassViewModel(email: '')),
         ChangeNotifierProvider(create: (_) => ForgotPasswordViewModel()),
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel(email: '',otp: '')),
-        ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
+        ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user, token: token)),
         ChangeNotifierProvider(create: (_) => SettingViewModel()),
         ChangeNotifierProxyProvider<UserProvider, MainViewModel>(
           create: (_) => MainViewModel(),
@@ -71,6 +76,7 @@ void main() async {
             return mainViewModel;
           },
         ),
+        ChangeNotifierProvider(create: (_) => MedicalReportViewModel()),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),

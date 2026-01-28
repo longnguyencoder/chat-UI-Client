@@ -6,6 +6,11 @@ class HealthProfileModel {
   final List<String> allergies;
   final List<String> chronicDiseases;
   final List<String> currentMedications;
+  final String? bloodType;
+  final double? height;
+  final double? weight;
+  final String? familyHistory;
+  final String? aiAnalysis; // AI-generated health advice
 
   HealthProfileModel({
     this.id,
@@ -15,6 +20,11 @@ class HealthProfileModel {
     this.allergies = const [],
     this.chronicDiseases = const [],
     this.currentMedications = const [],
+    this.bloodType,
+    this.height,
+    this.weight,
+    this.familyHistory,
+    this.aiAnalysis,
   });
 
   HealthProfileModel copyWith({
@@ -25,6 +35,11 @@ class HealthProfileModel {
     List<String>? allergies,
     List<String>? chronicDiseases,
     List<String>? currentMedications,
+    String? bloodType,
+    double? height,
+    double? weight,
+    String? familyHistory,
+    String? aiAnalysis,
   }) {
     return HealthProfileModel(
       id: id ?? this.id,
@@ -34,6 +49,11 @@ class HealthProfileModel {
       allergies: allergies ?? this.allergies,
       chronicDiseases: chronicDiseases ?? this.chronicDiseases,
       currentMedications: currentMedications ?? this.currentMedications,
+      bloodType: bloodType ?? this.bloodType,
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      familyHistory: familyHistory ?? this.familyHistory,
+      aiAnalysis: aiAnalysis ?? this.aiAnalysis,
     );
   }
 
@@ -56,6 +76,11 @@ class HealthProfileModel {
       currentMedications: (json['medications'] ?? json['current_medications']) != null
           ? List<String>.from(json['medications'] ?? json['current_medications'])
           : [],
+      bloodType: json['blood_type'],
+      height: json['height'] != null ? (json['height'] as num).toDouble() : null,
+      weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+      familyHistory: json['family_history'],
+      aiAnalysis: json['ai_analysis'],
     );
   }
 
@@ -70,6 +95,10 @@ class HealthProfileModel {
       'allergies': allergies,
       'chronic_conditions': chronicDiseases,  // Backend dùng chronic_conditions
       'medications': currentMedications,       // Backend dùng medications
+      'blood_type': bloodType,
+      'height': height,
+      'weight': weight,
+      'family_history': familyHistory,
     };
   }
 
@@ -78,7 +107,28 @@ class HealthProfileModel {
         gender == null &&
         allergies.isEmpty &&
         chronicDiseases.isEmpty &&
-        currentMedications.isEmpty;
+        currentMedications.isEmpty &&
+        bloodType == null &&
+        height == null &&
+        weight == null &&
+        familyHistory == null;
+  }
+
+  /// Tính BMI real-time
+  double? get bmi {
+    if (height == null || weight == null || height == 0) return null;
+    final heightInMeters = height! / 100;
+    return weight! / (heightInMeters * heightInMeters);
+  }
+
+  /// Phân loại BMI
+  String get bmiCategory {
+    final value = bmi;
+    if (value == null) return 'N/A';
+    if (value < 18.5) return 'Thiếu cân';
+    if (value < 25) return 'Bình thường';
+    if (value < 30) return 'Thừa cân';
+    return 'Béo phì';
   }
 
   /// Chuyển đổi giới tính từ tiếng Việt sang tiếng Anh (cho API)

@@ -5,9 +5,13 @@ class UserProvider extends ChangeNotifier{
   UserModel? _userModel;
   UserModel? get user => _userModel;
 
-  void setUser(UserModel user) {
+  String? _token;
+  String? get token => _token;
+
+  void setUser(UserModel user, {String? token}) {
     print("👤 UserProvider.setUser: ${user.id}");
     _userModel = user;
+    if (token != null) _token = token;
     notifyListeners();
   }
 
@@ -17,10 +21,11 @@ class UserProvider extends ChangeNotifier{
     notifyListeners();
   }
 
-  void setUserIfAvailable(UserModel? user) {
+  void setUserIfAvailable(UserModel? user, {String? token}) {
     if (user != null) {
       print("👤 UserProvider.setUserIfAvailable: ${user.id}");
       _userModel = user;
+      if (token != null) _token = token;
       notifyListeners();
     }else{
       print("👤 UserProvider.setUserIfAvailable: user is null");

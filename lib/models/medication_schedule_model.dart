@@ -128,11 +128,21 @@ class MedicationSchedule {
   }
 
   /// Kiểm tra lịch có còn hiệu lực không
+  /// Kiểm tra lịch có còn hiệu lực không
   bool get isValid {
     if (!isActive) return false;
     final now = DateTime.now();
-    if (now.isBefore(startDate)) return false;
-    if (endDate != null && now.isAfter(endDate!)) return false;
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    
+    // Chỉ so sánh ngày: nếu hôm nay trước ngày bắt đầu -> chưa hiệu lực
+    if (today.isBefore(start)) return false;
+    
+    // Check end date (inclusive)
+    if (endDate != null) {
+      final end = DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59);
+      if (now.isAfter(end)) return false;
+    }
     return true;
   }
 

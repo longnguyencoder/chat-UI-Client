@@ -4,6 +4,11 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:mobilev2/models/message_model.dart';
+import 'package:mobilev2/views/widgets/hospital_map_card.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:markdown/markdown.dart' as md;
 
 class ChatBubble extends StatefulWidget {
   final String message;
@@ -14,6 +19,7 @@ class ChatBubble extends StatefulWidget {
   final String? imageBase64; // ✅ Thêm
   final String messageType;
   final Function(String, BuildContext)? onCopyPressed;
+  final Message? messageObject; // ✅ Thêm để truy cập map_data
 
   const ChatBubble({
     super.key,
@@ -25,6 +31,7 @@ class ChatBubble extends StatefulWidget {
     this.imageBase64, // ✅ Thêm
     this.messageType = 'text',
     this.onCopyPressed,
+    this.messageObject, // ✅ Thêm
   });
 
   @override
@@ -140,8 +147,8 @@ class _ChatBubbleState extends State<ChatBubble> {
 
   @override
   Widget build(BuildContext context) {
-    // Debug print
-    // print('Building chat bubble: isUser=${widget.isUser}, messageType=${widget.messageType}, voiceUrl=${widget.voiceUrl}');
+    // Tiền xử lý tin nhắn để tránh lỗi hiển thị đè chữ khi dùng custom builder
+    final processedMessage = _processMessage(widget.message);
     
     return Container(
       margin: EdgeInsets.only(
@@ -198,19 +205,66 @@ class _ChatBubbleState extends State<ChatBubble> {
                 if (widget.messageType == 'voice' && widget.voiceUrl != null && widget.voiceUrl!.isNotEmpty)
                   _buildVoiceMessage(),
 
+                // ✅ Hiển thị PDF nếu có
+                if (widget.messageObject?.pdfName != null)
+                  _buildPdfMessage(),
+
                 // Hiển thị text message với định dạng
                 if (widget.message.isNotEmpty)
-                  Text(
-                    widget.message,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: widget.isUser ? const Color(0xFF2C3E50) : Colors.white,
-                      height: 1.4,
+                    MarkdownBody(
+                      data: processedMessage, // ✅ Dùng tin nhắn đã xử lý
+                      selectable: false, // ❌ Tắt cái này đi để tránh crash trên Web
+                      onTapLink: (text, href, title) async {
+                        if (href != null) {
+                          final uri = Uri.parse(href);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        }
+                      },
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(
+                          fontSize: 16,
+                          color: widget.isUser ? const Color(0xFF2C3E50) : Colors.white,
+                          height: 1.4,
+                        ),
+                        a: TextStyle(
+                          color: widget.isUser ? Colors.blue.shade700 : Colors.white,
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        listBullet: TextStyle(
+                          color: widget.isUser ? const Color(0xFF2C3E50) : Colors.white,
+                        ),
+                      ),
+                      builders: {
+                        'a': _GoogleMapLinkBuilder(
+                          isUser: widget.isUser,
+                          onTap: (href) async {
+                            if (href != null) {
+                              final uri = Uri.parse(href);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            }
+                          },
+                        ),
+                      },
                     ),
-                  ),
               ],
             ),
           ),
+
+          // ✅ Hiển thị Hospital Map Card nếu có map_data
+          if (!widget.isUser && 
+              widget.messageObject?.mapData != null && 
+              widget.messageObject!.mapData!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: HospitalMapCard(
+                hospitals: widget.messageObject!.mapData!,
+              ),
+            ),
 
           // Actions cho tin nhắn bot
           if (widget.showActions && !widget.isUser)
@@ -284,6 +338,39 @@ class _ChatBubbleState extends State<ChatBubble> {
       print("Error decoding image: $e");
       return const SizedBox.shrink();
     }
+  }
+
+  // ✅ Widget hiển thị PDF
+  Widget _buildPdfMessage() {
+    final pdfName = widget.messageObject!.pdfName!;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: widget.isUser ? Colors.white.withOpacity(0.9) : Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.isUser ? Colors.blue.shade100 : Colors.blue.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.picture_as_pdf, color: Colors.red, size: 28),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              pdfName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: widget.isUser ? Colors.blue.shade800 : Colors.blue.shade900,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildVoiceMessage() {
@@ -363,6 +450,21 @@ class _ChatBubbleState extends State<ChatBubble> {
     return '$minutes:$seconds';
   }
 
+  String _processMessage(String message) {
+    // Tìm TẤT CẢ các link và thay thế text bằng Zero-Width Space (\u200b) để tránh đè chữ
+    return message.replaceAllMapped(
+      RegExp(r'\[(.*?)\]\((https?:\/\/[^\)]+)\)'),
+      (match) {
+        final text = match.group(1);
+        final url = match.group(2);
+        
+        // Thêm thông tin text gốc vào query param để builder đọc lại
+        final separator = url!.contains('?') ? '&' : '?';
+        return '[\u200b]($url${separator}original_text=${Uri.encodeComponent(text ?? "Liên kết")})';
+      },
+    );
+  }
+
   void _initializeAudioIfNeeded() {
     // Only initialize if it's a voice message and has a URL
     if (widget.messageType == 'voice' && widget.voiceUrl != null && !_audioInitialized) {
@@ -370,5 +472,78 @@ class _ChatBubbleState extends State<ChatBubble> {
       _setupAudioPlayer();
       _audioInitialized = true;
     }
+  }
+}
+
+class _GoogleMapLinkBuilder extends MarkdownElementBuilder {
+  final bool isUser;
+  final Function(String?) onTap;
+
+  _GoogleMapLinkBuilder({required this.isUser, required this.onTap});
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final String text = element.textContent;
+    final String? href = element.attributes['destination'] ?? element.attributes['href'];
+    
+    // Nếu là link đã được chúng ta xử lý (chứa Zero-Width Space)
+    if (text == '\u200b' && href != null) {
+      try {
+        final uri = Uri.parse(href);
+        final label = uri.queryParameters['original_text'] ?? "Xem chi tiết";
+        
+        bool isMap = href.contains('google.com/maps') || href.contains('maps.app.goo.gl');
+        bool isBooking = href.toLowerCase().contains('booking') || href.toLowerCase().contains('dat-lich');
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: ActionChip(
+            onPressed: () => onTap(href),
+            avatar: Icon(
+              isMap ? Icons.location_on : (isBooking ? Icons.calendar_today : Icons.link),
+              size: 14,
+              color: isUser ? Colors.white : (isMap ? Colors.blue.shade700 : Colors.teal.shade700),
+            ),
+            label: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isUser ? Colors.white : (isMap ? Colors.blue.shade700 : Colors.teal.shade700),
+              ),
+            ),
+            backgroundColor: isUser 
+                ? Colors.blue.shade400 
+                : (isMap ? Colors.blue.shade50 : Colors.teal.shade50),
+            side: BorderSide(
+              color: isUser 
+                  ? Colors.transparent 
+                  : (isMap ? Colors.blue.shade200 : Colors.teal.shade200),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            elevation: 1,
+            shadowColor: Colors.black.withOpacity(0.1),
+          ),
+        );
+      } catch (e) {
+        // Fallback below
+      }
+    }
+
+    // Nếu không khớp với link đã xử lý, hoặc có lỗi, render ra text bình thường nhưng ĐẢM BẢO không đè lên cái khác
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: GestureDetector(
+        onTap: () => onTap(href),
+        child: Text(
+          text,
+          style: preferredStyle?.copyWith(
+            color: isUser ? Colors.blue.shade700 : Colors.white,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
   }
 }

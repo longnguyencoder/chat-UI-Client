@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/services/auth/auth_service.dart';
+import 'package:go_router/go_router.dart';
 
 class ResetPasswordViewModel extends ChangeNotifier{
   final String email;
@@ -137,11 +138,7 @@ class ResetPasswordViewModel extends ChangeNotifier{
         );
 
         // Chuyển về trang login
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/login',
-              (route) => false,
-        );
+        context.go('/login');
       }
 
       return result['success'] as bool;

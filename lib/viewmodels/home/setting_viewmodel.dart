@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../models/itinerary.dart';
 import '../../providers/user_provider.dart';
@@ -174,10 +175,8 @@ class SettingViewModel extends ChangeNotifier {
       if (!context.mounted) return;
 
       // 4. Navigate
-      Navigator.of(
-        context,
-        rootNavigator: true,
-      ).pushNamedAndRemoveUntil('/login', (route) => false);
+      // 4. Navigate
+      context.go('/login');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

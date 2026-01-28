@@ -16,12 +16,22 @@ class HealthProfileViewModel extends ChangeNotifier {
   String? _errorMessage;
   HealthProfileModel? _healthProfile;
 
+  // Health advice state
+  bool _isLoadingAdvice = false;
+  String? _aiAnalysis;
+  dynamic _healthAnalysis; // Will be HealthAnalysis model
+  dynamic _healthRecommendations; // Will be HealthRecommendations model
+
   // Form controllers
   DateTime? _dateOfBirth;
   String? _gender;
   List<String> _allergies = [];
   List<String> _chronicDiseases = [];
   List<String> _currentMedications = [];
+  String? _bloodType;
+  double? _height;
+  double? _weight;
+  String? _familyHistory;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -33,6 +43,31 @@ class HealthProfileViewModel extends ChangeNotifier {
   List<String> get allergies => _allergies;
   List<String> get chronicDiseases => _chronicDiseases;
   List<String> get currentMedications => _currentMedications;
+  String? get bloodType => _bloodType;
+  double? get height => _height;
+  double? get weight => _weight;
+  String? get familyHistory => _familyHistory;
+  
+  double? get bmi {
+    if (_height == null || _weight == null || _height == 0) return null;
+    final h = _height! / 100;
+    return _weight! / (h * h);
+  }
+
+  String get bmiCategory {
+    final val = bmi;
+    if (val == null) return 'N/A';
+    if (val < 18.5) return 'Thiếu cân';
+    if (val < 25) return 'Bình thường';
+    if (val < 30) return 'Thừa cân';
+    return 'Béo phì';
+  }
+  
+  // Health advice getters
+  bool get isLoadingAdvice => _isLoadingAdvice;
+  String? get aiAnalysis => _aiAnalysis;
+  dynamic get healthAnalysis => _healthAnalysis;
+  dynamic get healthRecommendations => _healthRecommendations;
 
   /// Load health profile from server
   Future<void> loadHealthProfile() async {
@@ -50,6 +85,10 @@ class HealthProfileViewModel extends ChangeNotifier {
         _allergies = List.from(_healthProfile?.allergies ?? []);
         _chronicDiseases = List.from(_healthProfile?.chronicDiseases ?? []);
         _currentMedications = List.from(_healthProfile?.currentMedications ?? []);
+        _bloodType = _healthProfile?.bloodType;
+        _height = _healthProfile?.height;
+        _weight = _healthProfile?.weight;
+        _familyHistory = _healthProfile?.familyHistory;
       }
     } else {
       _errorMessage = result['message'];
@@ -57,6 +96,11 @@ class HealthProfileViewModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+    
+    // Auto-fetch health advice if profile loaded successfully
+    if (_healthProfile != null) {
+      fetchHealthAdvice();
+    }
   }
 
   /// Update date of birth
@@ -113,6 +157,26 @@ class HealthProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setBloodType(String? bloodType) {
+    _bloodType = bloodType;
+    notifyListeners();
+  }
+
+  void setHeight(double? height) {
+    _height = height;
+    notifyListeners();
+  }
+
+  void setWeight(double? weight) {
+    _weight = weight;
+    notifyListeners();
+  }
+
+  void setFamilyHistory(String? familyHistory) {
+    _familyHistory = familyHistory;
+    notifyListeners();
+  }
+
   /// Save health profile
   Future<bool> saveHealthProfile() async {
     _isSaving = true;
@@ -127,6 +191,10 @@ class HealthProfileViewModel extends ChangeNotifier {
       allergies: _allergies,
       chronicDiseases: _chronicDiseases,
       currentMedications: _currentMedications,
+      bloodType: _bloodType,
+      height: _height,
+      weight: _weight,
+      familyHistory: _familyHistory,
     );
 
     final result = await _service.updateHealthProfile(profile);
@@ -136,6 +204,10 @@ class HealthProfileViewModel extends ChangeNotifier {
     if (result['success']) {
       _healthProfile = profile;
       notifyListeners();
+      
+      // Fetch health advice after successful save
+      await fetchHealthAdvice();
+      
       return true;
     } else {
       _errorMessage = result['message'];
@@ -169,5 +241,41 @@ class HealthProfileViewModel extends ChangeNotifier {
   void setMedicationsFromString(String input) {
     _currentMedications = parseCommaSeparated(input);
     notifyListeners();
+  }
+
+  /// Fetch health advice (analysis + recommendations)
+  Future<void> fetchHealthAdvice() async {
+    _isLoadingAdvice = true;
+    notifyListeners();
+
+    try {
+      // Fetch analysis and recommendations endpoints only
+      final results = await Future.wait([
+        _service.getHealthAnalysis(),
+        _service.getHealthRecommendations(),
+      ]);
+
+      final analysisResult = results[0];
+      final recommendationsResult = results[1];
+
+      // Parse health analysis
+      if (analysisResult['success'] && analysisResult['data'] != null) {
+        _healthAnalysis = analysisResult['data'];
+      }
+
+      // Parse health recommendations
+      if (recommendationsResult['success'] && recommendationsResult['data'] != null) {
+        _healthRecommendations = recommendationsResult['data'];
+        // Use AI insights from recommendations as the main AI analysis
+        _aiAnalysis = recommendationsResult['data']['ai_insights'];
+      }
+
+      _isLoadingAdvice = false;
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error fetching health advice: $e');
+      _isLoadingAdvice = false;
+      notifyListeners();
+    }
   }
 }

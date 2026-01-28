@@ -12,6 +12,7 @@ import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:mobilev2/views/medication/add_medication_view.dart';
 import 'package:mobilev2/views/medication/medication_detail_view.dart';
 import 'package:mobilev2/views/medication/medication_list_view.dart';
+import 'package:mobilev2/views/medical/medical_report_analysis_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Router configuration for the application
@@ -66,7 +67,11 @@ class AppRouter {
         GoRoute(
           path: '/verify_otp_forgot_pass',
           name: 'verify_otp_forgot_pass',
-          builder: (context, state) => const VerifyOtpForgotPassView(),
+          builder: (context, state) {
+            final extras = state.extra as Map<String, dynamic>?;
+            final email = extras?['email'] ?? '';
+            return VerifyOtpForgotPassView(email: email);
+          },
         ),
         GoRoute(
           path: '/forgot_password',
@@ -126,6 +131,12 @@ class AppRouter {
             // Note: medication detail view uses Navigator.push
             // because it requires passing complex objects (schedule, viewModel)
           ],
+        ),
+        
+        GoRoute(
+          path: '/medical-report-analysis',
+          name: 'medical_report_analysis',
+          builder: (context, state) => const MedicalReportAnalysisView(),
         ),
       ],
       errorBuilder: (context, state) => Scaffold(

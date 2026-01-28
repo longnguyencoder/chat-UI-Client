@@ -168,10 +168,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                     final success = await viewModel
                                         .forgotPassword(context);
                                     if (success && context.mounted) {
-                                      Navigator.pushNamed(
-                                        context,
+                                      context.push(
                                         '/verify_otp_forgot_pass',
-                                        arguments: {
+                                        extra: {
                                           'email': viewModel.emailController.text.trim(),
                                           'otp_type': 'forgot_password',
                                         },

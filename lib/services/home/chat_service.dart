@@ -8,6 +8,7 @@ import 'package:mobilev2/services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter/foundation.dart'; // Import kIsWeb
+import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatService {
@@ -161,6 +162,7 @@ class ChatService {
     String messageType = 'text',
     String? voiceUrl,
     XFile? imageFile, // ✅ Thêm tham số ảnh (dùng XFile để hỗ trợ Web)
+    PlatformFile? pdfFile, // ✅ Thêm tham số PDF
   }) async {
     try {
       print("🔐 Token used: $token");
@@ -183,6 +185,13 @@ class ChatService {
         print("📸 Encoded image to Base64 with prefix (length: ${base64Image.length})");
       }
 
+      String? base64Pdf;
+      if (pdfFile != null && pdfFile.bytes != null) {
+        final rawBase64 = base64Encode(pdfFile.bytes!);
+        base64Pdf = "data:application/pdf;base64,$rawBase64";
+        print("📄 Encoded PDF to Base64 (name: ${pdfFile.name}, length: ${base64Pdf.length})");
+      }
+
       final body = {
         'conversation_id': conversationId,
         'question': messageText,       // ✅ Backend chat-secure dùng 'question'
@@ -193,6 +202,10 @@ class ChatService {
 
       if (base64Image != null) {
         body['image_base64'] = base64Image;
+      }
+      if (base64Pdf != null) {
+        body['pdf_base64'] = base64Pdf;
+        body['pdf_name'] = pdfFile!.name;
       }
 
       final response = await http.post(
@@ -222,7 +235,9 @@ class ChatService {
               // Mapping sources nếu có
               'sources': responseData['sources'],
               // Mapping suggestions
-              'suggestions': responseData['suggestions']
+              'suggestions': responseData['suggestions'],
+              // ✅ Mapping map_data (hospital locations)
+              'map_data': responseData['map_data'],
             },
             // Backend chat-secure không trả lại user_message, ta tự fake để UI hiển thị
             'user_message': {

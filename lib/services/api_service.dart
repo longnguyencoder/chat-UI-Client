@@ -67,8 +67,16 @@ class ApiService {
   static String getHealthProfileUrl(int userId) =>
       "$_baseUrl/health-profile?user_id=$userId";
   
+  
   // PUT: Cập nhật hồ sơ sức khỏe
   static String get updateHealthProfileUrl => "$_baseUrl/health-profile";
+
+  // GET: Phân tích sức khỏe (BMI, bệnh mãn tính)
+  static String get getHealthAnalysisUrl => "$_baseUrl/health-profile/analysis";
+  
+  // GET: Lời khuyên chi tiết (diet, rest, exercise)
+  static String get getHealthRecommendationsUrl => "$_baseUrl/health-profile/recommendations";
+
 
   // ========================================================================
   // MEDICATION REMINDER API
@@ -134,4 +142,9 @@ class ApiService {
   static String get createItineraryUrl => "$_baseUrl/itinerary/create";
   static String getItineraryByUserIdUrl(int userId) => "$_baseUrl/itinerary/list?user_id=$userId";
   static String removeItineraryUrl(int itineraryId, int userId) => "$_baseUrl/itinerary/delete?itinerary_id=$itineraryId&user_id=$userId";
+
+  // ========================================================================
+  // MEDICAL REPORT ANALYSIS API
+  // ========================================================================
+  static String get analyzeMedicalReportUrl => "$_baseUrl/medical-report/analyze";
 }

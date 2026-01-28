@@ -125,6 +125,20 @@ class _MedicationListContent extends StatelessWidget {
                     'Nhấn nút + để thêm lịch uống thuốc',
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
+                  const SizedBox(height: 24),
+                  // DEBUG INFO
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Debug Info:\nUser ID: ${viewModel.userId}\nSchedules Loaded: ${viewModel.schedules.length}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 10, color: Colors.grey.shade800),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -177,7 +191,10 @@ class _MedicationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nextReminder = schedule.nextReminder;
+    // SỬA: Lấy status từ ViewModel thay vì chỉ lấy time từ Model
+    final reminderStatus = viewModel.getNextReminderStatus(schedule);
+    final nextReminder = reminderStatus?['time'] as DateTime?;
+    final isTaken = reminderStatus?['isTaken'] as bool? ?? false;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -284,22 +301,25 @@ class _MedicationCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    // Đổi màu nền nếu đã uống
+                    color: isTaken ? Colors.green.shade50 : Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.notifications_active,
+                        isTaken ? Icons.check_circle : Icons.notifications_active,
                         size: 16,
-                        color: Colors.orange.shade700,
+                        color: isTaken ? Colors.green.shade700 : Colors.orange.shade700,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Nhắc nhở tiếp theo: ${_formatDateTime(nextReminder)}',
+                        isTaken 
+                           ? 'Đã uống lúc ${_formatTime(nextReminder)}'
+                           : 'Nhắc nhở tiếp theo: ${_formatDateTime(nextReminder)}',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.orange.shade700,
+                          color: isTaken ? Colors.green.shade700 : Colors.orange.shade700,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -312,48 +332,54 @@ class _MedicationCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final viewModel = context.read<MedicationViewModel>();
-                        final success = await viewModel.markAsTaken(schedule);
-                        
-                        if (success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Đã ghi nhận uống thuốc'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: isTaken 
+                          ? null // Disable nếu đã uống
+                          : () async {
+                              final viewModel = context.read<MedicationViewModel>();
+                              final success = await viewModel.markAsTaken(schedule);
+                              
+                              if (success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('✅ Đã ghi nhận uống thuốc'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
                       icon: const Icon(Icons.check_circle_outline, size: 18),
-                      label: const Text('Đã uống'),
+                      label: Text(isTaken ? 'Đã hoàn thành' : 'Đã uống'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.green.shade700,
                         side: BorderSide(color: Colors.green.shade300),
+                        disabledForegroundColor: Colors.grey.shade400, // Màu khi disable
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final viewModel = context.read<MedicationViewModel>();
-                        final success = await viewModel.markAsSkipped(schedule, null);
-                        
-                        if (success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('⏭️ Đã ghi nhận bỏ qua'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: isTaken 
+                          ? null 
+                          : () async {
+                              final viewModel = context.read<MedicationViewModel>();
+                              final success = await viewModel.markAsSkipped(schedule, null);
+                              
+                              if (success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('⏭️ Đã ghi nhận bỏ qua'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
                       icon: const Icon(Icons.skip_next, size: 18),
                       label: const Text('Bỏ qua'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.orange.shade700,
                         side: BorderSide(color: Colors.orange.shade300),
+                         disabledForegroundColor: Colors.grey.shade400,
                       ),
                     ),
                   ),
@@ -364,6 +390,10 @@ class _MedicationCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatDateTime(DateTime dateTime) {

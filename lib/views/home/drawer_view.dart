@@ -406,6 +406,35 @@ class _DrawerContentState extends State<_DrawerContent> {
                   // Divider
                   const Divider(height: 1),
 
+                  // Medical Report Analysis section
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.red.shade100,
+                      child: Icon(
+                        Icons.picture_as_pdf,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
+                    ),
+                    title: const Text(
+                      'Phân tích Xét nghiệm',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: const Text(
+                      'Trích xuất chỉ số từ PDF',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey,
+                      size: 16,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/medical-report-analysis');
+                    },
+                  ),
+
                   // Medication Reminder section
                   ListTile(
                     leading: CircleAvatar(

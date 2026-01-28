@@ -61,6 +61,7 @@ class LoginViewModel extends ChangeNotifier {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
+      final prefs = await SharedPreferences.getInstance();
       final result = await _authService.login(
         emailController.text.trim(),
         passwordController.text.trim(),
@@ -76,28 +77,24 @@ class LoginViewModel extends ChangeNotifier {
       }
 
       if (result.containsKey('user')) {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user', jsonEncode(result['user']));
       }
 
       // ✅ Lưu token nếu có
       if (result.containsKey('token')) {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', result['token']);
       }
 
       // ✅ Lưu isLoggedIn flag để router redirect hoạt động
       if (result['success'] as bool) {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
       }
 
-      final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('user');
       if (userJson != null) {
         final user = UserModel.fromJson(jsonDecode(userJson));
-        // Provider.of<UserProvider>(context, listen: false).setUser(user);
-        userProvider.setUser(user);
+        final token = result['token'] as String?;
+        userProvider.setUser(user, token: token);
       }
       return result['success'] as bool;
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/reset_password_viewmodel.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class ResetPasswordView extends StatefulWidget {
@@ -265,11 +266,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                       // Back to login
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/login',
-                            (route) => false,
-                          );
+                          context.go('/login');
                         },
                         child: Text(
                           'Quay lại đăng nhập',
