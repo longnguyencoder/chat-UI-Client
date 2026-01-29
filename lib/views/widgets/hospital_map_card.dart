@@ -94,6 +94,9 @@ class _HospitalMapCardState extends State<HospitalMapCard>
     if (_mapboxMap == null) return;
 
     try {
+      // 📍 Optional: Register a custom image if you want to use it
+      // For now, let's use a standard circle or symbol if the image isn't registered
+      
       final pointAnnotationManager =
           await _mapboxMap!.annotations.createPointAnnotationManager();
 
@@ -106,8 +109,15 @@ class _HospitalMapCardState extends State<HospitalMapCard>
             coordinates: Position(hospital.longitude, hospital.latitude),
           ),
           iconSize: 1.2,
-          iconImage: 'hospital-marker', // We'll use a default marker
+          // ⚠️ Mapbox needs style images to be registered. 
+          // If 'hospital-marker' isn't in your style, it won't show.
+          // Using a simple circle or default if available.
+          iconImage: 'marker-15', // Fallback to a standard Mapbox icon
           iconColor: _getMarkerColor(hospital.priorityScore).value,
+          textField: hospital.name,
+          textSize: 10,
+          textOffset: [0, 2.0],
+          textColor: Colors.black.value,
         );
 
         await pointAnnotationManager.create(pointAnnotation);

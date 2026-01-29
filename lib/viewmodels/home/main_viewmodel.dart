@@ -11,6 +11,7 @@ import 'package:record/record.dart';
 import '../../models/message_model.dart';
 import '../../services/home/chat_service.dart';
 import '../../views/home/map_view.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
@@ -319,6 +320,29 @@ class MainViewModel extends ChangeNotifier {
     clearError();
 
     try {
+      // 📍 Cố gắng lấy tọa độ GPS từ thiết bị
+      double? latitude;
+      double? longitude;
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        
+        if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 3),
+          );
+          latitude = position.latitude;
+          longitude = position.longitude;
+          print("📍 Current location: $latitude, $longitude");
+        }
+      } catch (e) {
+        print("⚠️ Warning: Could not get location: $e");
+        // Không chặn việc gửi tin nhắn nếu không lấy được tọa độ
+      }
+
       // Lấy token từ SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -332,6 +356,8 @@ class MainViewModel extends ChangeNotifier {
         conversationId: _currentConversation!.conversationId,
         messageText: messageText,
         token: token,
+        latitude: latitude,   // ✅ Gửi vĩ độ
+        longitude: longitude, // ✅ Gửi kinh độ
         imageFile: imageFile, // ✅ Truyền ảnh
         pdfFile: pdfFile, // ✅ Truyền file PDF
       );

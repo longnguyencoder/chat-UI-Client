@@ -158,6 +158,8 @@ class ChatService {
     required int conversationId,
     required String messageText,
     required String token, // ✅ Thêm Token vào tham số
+    double? latitude,      // ✅ Thêm vĩ độ
+    double? longitude,     // ✅ Thêm kinh độ
     String translatedText = '',
     String messageType = 'text',
     String? voiceUrl,
@@ -198,6 +200,8 @@ class ChatService {
         // Các trường phụ có thể gửi thêm nếu backend cần log
         'message_text': messageText,   
         'message_type': messageType,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       };
 
       if (base64Image != null) {

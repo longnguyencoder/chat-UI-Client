@@ -152,64 +152,155 @@ class MedicalReportAnalysisView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        const Text("KẾT QUẢ PHÂN TÍCH", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
-        const Divider(),
-        
-        // Patient Info
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text("Bệnh nhân: ${data.patientInfo.name}"),
-          subtitle: Text("Ngày xét nghiệm: ${data.patientInfo.date}"),
-          leading: const Icon(Icons.person, color: Colors.blue),
-        ),
-
+        const Text("KẾT QUẢ PHÂN TÍCH",
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
         const SizedBox(height: 16),
-        const Text("Chi tiết chỉ số:", style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
 
-        // Indicators Table
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
-            columns: const [
-              DataColumn(label: Text('Chỉ số')),
-              DataColumn(label: Text('Kết quả')),
-              DataColumn(label: Text('Tham chiếu')),
-              DataColumn(label: Text('Đơn vị')),
-              DataColumn(label: Text('Trạng thái')),
-            ],
-            rows: data.indicators.map((indicator) {
-              final isAbnormal = indicator.isAbnormal;
-              return DataRow(cells: [
-                DataCell(Text(indicator.name, style: TextStyle(fontWeight: isAbnormal ? FontWeight.bold : FontWeight.normal))),
-                DataCell(Text(indicator.result, style: TextStyle(color: isAbnormal ? Colors.red : Colors.black))),
-                DataCell(Text(indicator.referenceRange)),
-                DataCell(Text(indicator.unit)),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isAbnormal ? Colors.red.shade100 : Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      indicator.status,
-                      style: TextStyle(color: isAbnormal ? Colors.red.shade700 : Colors.green.shade700, fontSize: 12),
-                    ),
+        // Phần A: Header (Thông tin chung)
+        Card(
+          elevation: 2,
+          color: Colors.blue.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.blue,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.patientInfo.name.toUpperCase(),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text("Ngày xét nghiệm: ${data.patientInfo.date}",
+                          style: TextStyle(color: Colors.grey.shade700)),
+                    ],
                   ),
                 ),
-              ]);
-            }).toList(),
+              ],
+            ),
           ),
         ),
 
+        const SizedBox(height: 20),
+        const Text("CHI TIẾT CHỈ SỐ",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+
+        // Phần B: Danh sách chỉ số (ExpansionTile)
+        ...data.indicators.map((indicator) => _buildIndicatorTile(indicator)),
+
         const SizedBox(height: 24),
+
+        // Phần C: Tổng kết & Lời khuyên
         _buildSummaryCard("Tóm tắt", data.summary, Icons.summarize, Colors.blue),
         const SizedBox(height: 12),
-        _buildSummaryCard("Lời khuyên bác sĩ (AI)", data.advice, Icons.medical_information, Colors.orange),
+        _buildSummaryCard("Lời khuyên bác sĩ (AI)", data.advice,
+            Icons.medical_information, Colors.orange),
         const SizedBox(height: 40),
       ],
+    );
+  }
+
+  Widget _buildIndicatorTile(MedicalIndicator indicator) {
+    final isAbnormal = indicator.isAbnormal;
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // Collapsed View
+        title: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Text(
+                indicator.name,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isAbnormal ? Colors.red : Colors.black87),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                indicator.result,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isAbnormal ? Colors.red.shade100 : Colors.green.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            indicator.status,
+            style: TextStyle(
+              color: isAbnormal ? Colors.red.shade700 : Colors.green.shade700,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        // Expanded View
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey.shade50,
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow("Kết quả:", indicator.result),
+                _buildDetailRow("Trị số tham chiếu:", indicator.referenceRange),
+                _buildDetailRow("Đơn vị:", indicator.unit),
+                if (indicator.explanation.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text("Giải thích ý nghĩa:",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text(
+                    indicator.explanation,
+                    style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+          ),
+        ],
+      ),
     );
   }
 

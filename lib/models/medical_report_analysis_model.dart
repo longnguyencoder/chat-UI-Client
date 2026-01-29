@@ -65,6 +65,7 @@ class MedicalIndicator {
   final String referenceRange;
   final String unit;
   final String status;
+  final String explanation;
 
   MedicalIndicator({
     required this.name,
@@ -72,6 +73,7 @@ class MedicalIndicator {
     required this.referenceRange,
     required this.unit,
     required this.status,
+    this.explanation = '',
   });
 
   factory MedicalIndicator.fromJson(Map<String, dynamic> json) {
@@ -81,6 +83,7 @@ class MedicalIndicator {
       referenceRange: json['reference_range'] ?? '',
       unit: json['unit'] ?? '',
       status: json['status'] ?? 'Bình thường',
+      explanation: json['explanation'] ?? '',
     );
   }
 
